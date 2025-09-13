@@ -51,7 +51,7 @@ bs2pro_controller
 ### GUI Mode
 
 ```bash
-python -m bs2pro.main
+bs2pro_controller
 ```
 
 ### CLI Mode
@@ -59,9 +59,9 @@ python -m bs2pro.main
 Send commands directly:
 
 ```bash
-bs2pro rpm_1900
-bs2pro autostart_instant
-bs2pro startwhenpowered_on
+bs2pro_controller rpm_1900
+bs2pro_controller autostart_instant
+bs2pro_controller startwhenpowered_on
 ```
 
 Supported CLI commands:
