@@ -31,7 +31,9 @@ COMMANDS = {
     ]
 }
 
-CONFIG_FILE = "settings.ini"
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "bs2pro_controller")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.ini")
+
 DEFAULT_SETTINGS = {
     "last_rpm": "1300",
     "rpm_indicator": "True",
@@ -78,6 +80,8 @@ def load_setting(key, default=None):
     return default
 
 def initialize_settings():
+    if not os.path.exists(CONFIG_DIR):
+        os.makedirs(CONFIG_DIR)
     if not os.path.exists(CONFIG_FILE):
         config = configparser.ConfigParser()
         config["Settings"] = DEFAULT_SETTINGS
