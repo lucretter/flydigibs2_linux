@@ -33,14 +33,17 @@ To install the BS2PRO Controller as a CLI tool and desktop app:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/bs2pro-controller.git
-cd bs2pro-controller
+git clone https://github.com/lucretter/flydigibs2_linux.git
+cd flydigibs2_linux
 
 # Install locally in editable mode
 pip install -e .
 ```
 
 This will register the `bs2pro` command globally, allowing you to run:
+
+
+You can now run the CLI tool from anywhere:
 
 ```bash
 bs2pro rpm_1900
@@ -65,7 +68,7 @@ pip install dist/bs2pro_controller-1.0.0-py3-none-any.whl
 ### GUI Mode
 
 ```bash
-python bs2pro_controller.py
+python -m bs2pro.main
 ```
 
 ### CLI Mode
@@ -73,9 +76,9 @@ python bs2pro_controller.py
 Send commands directly:
 
 ```bash
-python bs2pro_controller.py rpm_1900
-python bs2pro_controller.py autostart_instant
-python bs2pro_controller.py startwhenpowered_on
+bs2pro rpm_1900
+bs2pro autostart_instant
+bs2pro startwhenpowered_on
 ```
 
 Supported CLI commands:
