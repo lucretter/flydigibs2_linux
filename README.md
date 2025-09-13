@@ -20,13 +20,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - tkinter (usually bundled with Python)
 - Flydigi BS2Pro (might work on other models, haven't tested)
 
-Install dependencies:
-
-```bash
-pip install hidapi ttkbootstrap
-```
-
-## 🛠️ Installation & Build
+## 🛠️ Installation
 
 To install the BS2PRO Controller as a CLI tool and desktop app, simply run the provided install script:
 
