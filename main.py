@@ -24,9 +24,11 @@ COMMANDS = {
     "autostart_off": "5aa50d03001000000000000000000000000000000000000000000000000000",
     "autostart_instant": "5aa50d03011100000000000000000000000000000000000000000000000000",
     "autostart_delayed": "5aa50d03021200000000000000000000000000000000000000000000000000",
-    "start_on": "5aa50c03011000000000000000000000000000000000000000000000000000",
-    "start_off_1": "5aa50c03011000000000000000000000000000000000000000000000000000",
-    "start_off_2": "5aa50c03021100000000000000000000000000000000000000000000000000"
+    "startwhenpowered_on": "5aa50c03011000000000000000000000000000000000000000000000000000",
+    "startwhenpowered_off": [
+        "5aa50c03011000000000000000000000000000000000000000000000000000",
+        "5aa50c03021100000000000000000000000000000000000000000000000000"
+    ]
 }
 
 CONFIG_FILE = "settings.ini"
@@ -81,10 +83,10 @@ def apply_initial_settings():
     else:
         send_command(COMMANDS["rpm_off"])
     if DEFAULT_SETTINGS["start_when_powered"] == "True":
-        send_command(COMMANDS["start_on"])
+        send_command(COMMANDS["startwhenpowered_on"])
     else:
-        send_command(COMMANDS["start_off_1"])
-        send_command(COMMANDS["start_off_2"])
+        for cmd in COMMANDS["startwhenpowered_off"]:
+            send_command(cmd)
     send_command(COMMANDS[f"autostart_{DEFAULT_SETTINGS['autostart_mode'].lower()}"])
 
 def on_rpm_select(event=None):
@@ -108,10 +110,10 @@ def on_autostart_select(event=None):
 def on_start_toggle():
     state = start_var.get()
     if state:
-        send_command(COMMANDS["start_on"])
+        send_command(COMMANDS["startwhenpowered_on"])
     else:
-        send_command(COMMANDS["start_off_1"])
-        send_command(COMMANDS["start_off_2"])
+        for cmd in COMMANDS["startwhenpowered_off"]:
+            send_command(cmd)
     save_setting("start_when_powered", str(state))
 
 # Initialize settings
@@ -134,7 +136,12 @@ def handle_cli_args():
             except ValueError:
                 print("❌ Invalid RPM format. Use: rpm_1300, rpm_2700, etc.")
         elif arg in COMMANDS:
-            send_command(COMMANDS[arg])
+            cmd = COMMANDS[arg]
+            if isinstance(cmd, list):
+                for c in cmd:
+                    send_command(c)
+            else:
+                send_command(cmd)
             print(f"✅ Command '{arg}' sent.")
         else:
             print(f"❌ Unknown command: {arg}")
@@ -143,7 +150,7 @@ def handle_cli_args():
 handle_cli_args()
 
 # GUI setup
-root = tb.Window(themename="darkly")  # Modern dark theme
+root = tb.Window(themename="darkly")
 root.title("BS2PRO Controller")
 root.geometry("400x400")
 root.resizable(True, True)
@@ -151,7 +158,6 @@ root.resizable(True, True)
 main_frame = tb.Frame(root, padding=10)
 main_frame.pack(fill="both", expand=True)
 
-# Controls Panel (Top)
 controls_frame = tb.LabelFrame(main_frame, text="Controls", padding=10, bootstyle="secondary")
 controls_frame.pack(fill="x", pady=(0, 10))
 
@@ -166,24 +172,20 @@ canvas.configure(yscrollcommand=scrollbar.set)
 canvas.pack(side="left", fill="both", expand=True)
 scrollbar.pack(side="right", fill="y")
 
-# 1. Autostart Mode Selector
 tb.Label(scrollable_frame, text="Autostart Mode:", bootstyle="light").pack(pady=(10, 2))
 autostart_combobox = tb.Combobox(scrollable_frame, values=["OFF", "Instant", "Delayed"], state="readonly", bootstyle="info")
 autostart_combobox.set(load_setting("autostart_mode", "OFF"))
 autostart_combobox.pack(pady=5)
 autostart_combobox.bind("<<ComboboxSelected>>", on_autostart_select)
 
-# 2. RPM Indicator Toggle
 rpm_var = tk.BooleanVar(value=load_setting("rpm_indicator", "False") == "True")
 rpm_toggle = tb.Checkbutton(scrollable_frame, text="RPM Indicator", variable=rpm_var, command=on_rpm_toggle, bootstyle="success")
 rpm_toggle.pack(fill="x", pady=8)
 
-# 3. Start When Powered Toggle
 start_var = tk.BooleanVar(value=load_setting("start_when_powered", "False") == "True")
 start_toggle = tb.Checkbutton(scrollable_frame, text="Start When Powered", variable=start_var, command=on_start_toggle, bootstyle="danger")
 start_toggle.pack(fill="x", pady=8)
 
-# RPM Selection Panel (Bottom)
 rpm_frame = tb.LabelFrame(main_frame, text="Fan Speed", padding=10, bootstyle="secondary")
 rpm_frame.pack(fill="x", pady=(0, 10))
 
