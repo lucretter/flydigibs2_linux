@@ -13,8 +13,6 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - ⚡ **Start When Powered** — Toggle automatic startup behavior  
 - 🚀 **Autostart Modes** — Choose between OFF, Instant, or Delayed  
 - 🎛️ **RPM Indicator** — Enable/disable RPM feedback  
-- 💾 **Persistent Settings** — Saves user preferences in `settings.ini`  
-- 🖥️ **Modern GUI** — Responsive, dark-themed interface using `ttkbootstrap`  
 - 🧪 **CLI Support** — Send commands directly via terminal  
 
 ## 📦 Requirements
