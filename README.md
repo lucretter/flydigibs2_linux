@@ -11,7 +11,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 
 - 🔧 **Fan Speed Control** — Select RPM values from 1300 to 2700  
 - ⚡ **Start When Powered** — Toggle automatic startup behavior  
-- 🚀 **Autostart Modes** — Choose between OFF, Instant, or Delayed  
+- 🚀 **Auto start-stop Modes** — Choose between OFF, Instant, or Delayed  
 - 🎛️ **RPM Indicator** — Enable/disable RPM feedback  
 - 🧪 **CLI Support** — Send commands directly via terminal  
 
