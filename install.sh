@@ -3,12 +3,23 @@
 
 set -e
 
+set -e
+
+# Create and activate Python venv
+VENV_DIR=".venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating Python virtual environment in $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
+fi
+source "$VENV_DIR/bin/activate"
+
 APP_NAME="bs2pro_controller"
 MAIN_SCRIPT="bs2pro/main.py"
 
 # Check for PyInstaller, install if missing
-if ! command -v pyinstaller &> /dev/null; then
-    echo "PyInstaller not found. Installing..."
+
+if ! "$VENV_DIR/bin/pyinstaller" --version &> /dev/null; then
+    echo "PyInstaller not found in venv. Installing..."
     pip install pyinstaller
 fi
 
