@@ -41,15 +41,14 @@ Send commands directly:
 ```bash
 python bs2pro_controller.py rpm_1900
 python bs2pro_controller.py autostart_instant
-python bs2pro_controller.py start_on
+python bs2pro_controller.py startwhenpowered_on
 ```
 
 Supported CLI commands:
 - `rpm_1300`, `rpm_1700`, ..., `rpm_2700`
 - `rpm_on`, `rpm_off`
 - `autostart_off`, `autostart_instant`, `autostart_delayed`
-- `start_on`, `start_off_1`, `start_off_2`
-
+- `startwhenpowered_on`, `startwhenpowered_off`
 ## 🧠 Settings File
 
 Located at `settings.ini`, automatically created on first run.
