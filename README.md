@@ -25,7 +25,6 @@ Install dependencies:
 ```bash
 pip install hidapi ttkbootstrap
 ```
-git clone https://github.com/lucretter/flydigibs2_linux.git
 
 ## 🛠️ Installation & Build
 
