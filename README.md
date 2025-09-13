@@ -69,17 +69,6 @@ Supported CLI commands:
 - `rpm_on`, `rpm_off`
 - `autostart_off`, `autostart_instant`, `autostart_delayed`
 - `startwhenpowered_on`, `startwhenpowered_off`
-## 🧠 Settings File
-
-Located at `settings.ini`, automatically created on first run.
-
-```ini
-[Settings]
-last_rpm = 1300
-rpm_indicator = True
-start_when_powered = True
-autostart_mode = Instant
-```
 
 ## 🧪 Development Notes
 
