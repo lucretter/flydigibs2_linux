@@ -25,6 +25,40 @@ Install dependencies:
 ```bash
 pip install hidapi ttkbootstrap
 ```
+## 🛠️ Installation & Build
+
+To install the BS2PRO Controller as a CLI tool and desktop app:
+
+### 🔧 Build Locally
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/bs2pro-controller.git
+cd bs2pro-controller
+
+# Install locally in editable mode
+pip install -e .
+```
+
+This will register the `bs2pro` command globally, allowing you to run:
+
+```bash
+bs2pro rpm_1900
+```
+
+### 📦 Build a Distributable Package
+
+To create a source distribution and wheel:
+
+```bash
+python setup.py sdist bdist_wheel
+```
+
+The output will be in the `dist/` folder. You can install it via:
+
+```bash
+pip install dist/bs2pro_controller-1.0.0-py3-none-any.whl
+```
 
 ## 🚀 Usage
 
