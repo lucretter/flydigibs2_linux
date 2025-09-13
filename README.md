@@ -65,7 +65,7 @@ bs2pro_controller startwhenpowered_on
 ```
 
 Supported CLI commands:
-- `rpm_1300`, `rpm_1700`, ..., `rpm_2700`
+- `rpm_1300`, `rpm_1700`, `rpm_1900`, `rpm_2100`, `rpm_2400`, `rpm_2700`
 - `rpm_on`, `rpm_off`
 - `autostart_off`, `autostart_instant`, `autostart_delayed`
 - `startwhenpowered_on`, `startwhenpowered_off`
