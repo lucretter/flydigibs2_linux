@@ -16,15 +16,20 @@ source "$VENV_DIR/bin/activate"
 APP_NAME="bs2pro_controller"
 MAIN_SCRIPT="bs2pro/main.py"
 
-# Check for PyInstaller, install if missing
 
+# Check for PyInstaller, install if missing
 if ! "$VENV_DIR/bin/pyinstaller" --version &> /dev/null; then
     echo "PyInstaller not found in venv. Installing..."
     pip install pyinstaller
 fi
 
+
+# Ensure required Python packages are installed in venv
+echo "Installing required Python packages in venv..."
+pip install hid ttkbootstrap
+
 # Build executable
-pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT"
+pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" --hidden-import=PIL._tkinter_finder
 
 # Move executable to /usr/bin (requires sudo)
 EXE_PATH="dist/$APP_NAME"

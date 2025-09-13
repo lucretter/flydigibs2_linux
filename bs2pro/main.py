@@ -39,15 +39,26 @@ DEFAULT_SETTINGS = {
     "autostart_mode": "Instant"
 }
 
+def detect_bs2pro():
+    devices = hid.enumerate()
+    for d in devices:
+        if "BS2PRO" in d.get("product_string", ""):
+            return d["vendor_id"], d["product_id"]
+    return None, None
+
 def send_command(hex_cmd):
     try:
-        dev = hid.Device(vid=0x37d7, pid=0x1002)
+        vid, pid = detect_bs2pro()
+        if vid is None or pid is None:
+            print("❌ BS2PRO device not found.")
+            return
+        dev = hid.Device(vid=vid, pid=pid)
         payload = bytes.fromhex(hex_cmd)
         dev.write(payload)
         dev.read(32, timeout=1000)
         dev.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ HID error: {e}")
 
 def save_setting(key, value):
     config = configparser.ConfigParser()
@@ -157,6 +168,18 @@ root.resizable(True, True)
 
 main_frame = tb.Frame(root, padding=10)
 main_frame.pack(fill="both", expand=True)
+
+device_status_label = tb.Label(main_frame, text="Detecting BS2PRO...", bootstyle="warning")
+device_status_label.pack(pady=(0, 10))
+
+def update_device_status():
+    vid, pid = detect_bs2pro()
+    if vid and pid:
+        device_status_label.config(text=f"✅ BS2PRO detected (VID: {hex(vid)}, PID: {hex(pid)})", bootstyle="success")
+    else:
+        device_status_label.config(text="❌ BS2PRO not detected", bootstyle="danger")
+
+update_device_status()
 
 controls_frame = tb.LabelFrame(main_frame, text="Controls", padding=10, bootstyle="secondary")
 controls_frame.pack(fill="x", pady=(0, 10))

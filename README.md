@@ -25,42 +25,25 @@ Install dependencies:
 ```bash
 pip install hidapi ttkbootstrap
 ```
+git clone https://github.com/lucretter/flydigibs2_linux.git
+
 ## 🛠️ Installation & Build
 
-To install the BS2PRO Controller as a CLI tool and desktop app:
-
-### 🔧 Build Locally
+To install the BS2PRO Controller as a CLI tool and desktop app, simply run the provided install script:
 
 ```bash
-# Clone the repository
 git clone https://github.com/lucretter/flydigibs2_linux.git
 cd flydigibs2_linux
-
-# Install locally in editable mode
-pip install -e .
+chmod +x install.sh
+./install.sh
 ```
 
-This will register the `bs2pro` command globally, allowing you to run:
+This will automatically set up a Python virtual environment, install all required dependencies, build the executable, and install it to `/usr/bin/bs2pro_controller` (requires sudo for the final step).
 
-
-You can now run the CLI tool from anywhere:
-
-```bash
-bs2pro rpm_1900
-```
-
-### 📦 Build a Distributable Package
-
-To create a source distribution and wheel:
+You can then run the app from anywhere using:
 
 ```bash
-python setup.py sdist bdist_wheel
-```
-
-The output will be in the `dist/` folder. You can install it via:
-
-```bash
-pip install dist/bs2pro_controller-1.0.0-py3-none-any.whl
+bs2pro_controller
 ```
 
 ## 🚀 Usage
