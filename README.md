@@ -1,6 +1,6 @@
 
 > **Disclaimer:**
-> This tool was a personal experiment, i’m not a developer, just someone tinkering with AI to solve a specific need. I thought it might come in handy for others, so I’m sharing it. 
+> This tool was was mostly developped with the help of AI, i’m not a developer, just someone tinkering with AI to solve a specific need. I thought it might come in handy for others, so I’m sharing it. 
 Note : RGB controls are not implemented because I have no use for it.
 
 # 🌀 BS2PRO Controller
