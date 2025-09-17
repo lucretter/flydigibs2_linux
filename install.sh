@@ -5,11 +5,31 @@ set -e
 
 set -e
 
+
+# Detect python command (python3 or python)
+PYTHON_CMD=""
+if command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &>/dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python 3.8 or newer is required, but no python executable found."
+    exit 1
+fi
+
+# Check Python version (require >= 3.8)
+PYTHON_OK=$($PYTHON_CMD -c 'import sys; print(int(sys.version_info.major >= 3 and sys.version_info.minor >= 8))' 2>/dev/null)
+if [ "$PYTHON_OK" != "1" ]; then
+    echo "Error: Python 3.8 or newer is required."
+    echo "Please install Python 3.8+ and re-run this script."
+    exit 1
+fi
+
 # Create and activate Python venv
 VENV_DIR=".venv"
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating Python virtual environment in $VENV_DIR..."
-    python3 -m venv "$VENV_DIR"
+    $PYTHON_CMD -m venv "$VENV_DIR"
 fi
 source "$VENV_DIR/bin/activate"
 
