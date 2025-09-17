@@ -51,8 +51,23 @@ DEFAULT_SETTINGS = {
 
 controller = BS2ProController()
 config_manager = ConfigManager(CONFIG_FILE, DEFAULT_SETTINGS)
+def reset_status_message():
+    update_device_status()
+
 def send_command(hex_cmd):
-    return controller.send_command(hex_cmd, status_callback=lambda msg, style: device_status_label.config(text=msg, bootstyle=style))
+    def status_callback(msg, style):
+        # Use more descriptive and accessible messages
+        if style == "danger":
+            device_status_label.config(text=f"❌ Error: {msg}", bootstyle="danger")
+        elif style == "success":
+            device_status_label.config(text=f"✅ Success: {msg}", bootstyle="success")
+        elif style == "warning":
+            device_status_label.config(text=f"⚠️ Warning: {msg}", bootstyle="warning")
+        else:
+            device_status_label.config(text=msg, bootstyle=style)
+        # Reset to default status after 2 seconds
+        root.after(2000, reset_status_message)
+    return controller.send_command(hex_cmd, status_callback=status_callback)
 
 def save_setting(key, value):
     config_manager.save_setting(key, value)
