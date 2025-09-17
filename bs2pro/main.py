@@ -1,8 +1,6 @@
-# ...existing code...
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-# ...existing code...
 
 # Entry point: wire up controller, config, and GUI
 from controller import BS2ProController
