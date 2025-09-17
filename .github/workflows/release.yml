@@ -3,6 +3,8 @@ name: Build and Release Packages
 
 permissions:
   contents: write
+  packages: write
+  pull-requests: write
 
 on:
   push:
@@ -47,6 +49,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            *.deb
-            *.rpm
-          token: ${{ secrets.GITHUB_TOKEN }}
+            dist/*.deb
+            dist/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
