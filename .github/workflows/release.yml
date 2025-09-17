@@ -20,7 +20,7 @@ jobs:
         run: pip install Pillow
 
       - name: Install Tcl/Tk dependencies
-        run: sudo apt-get update && sudo apt-get install -y tk-dev tcl-dev python3-tk
+        run: sudo apt-get update && sudo apt-get install -y tk-dev tcl-dev python3-tk tk tcl
 
       - name: Set up Python
         uses: actions/setup-python@v4
