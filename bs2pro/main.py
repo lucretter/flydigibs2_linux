@@ -1,13 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
-import configparser
 import os
-import hid
+import sys
+import logging
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
+from controller import BS2ProController
+from config import ConfigManager
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 import sys
-
-# RPM command map
+import logging
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",
     1700: "5aa5260500a406d50000000000000000000000000000000000000000000000",
@@ -31,8 +34,11 @@ COMMANDS = {
     ]
 }
 
+
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "bs2pro_controller")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.ini")
+LOG_FILE = os.path.join(CONFIG_DIR, "bs2pro.log")
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
 DEFAULT_SETTINGS = {
     "last_rpm": "1300",
@@ -41,54 +47,21 @@ DEFAULT_SETTINGS = {
     "autostart_mode": "Instant"
 }
 
-def detect_bs2pro():
-    devices = hid.enumerate()
-    for d in devices:
-        if "BS2PRO" in d.get("product_string", ""):
-            return d["vendor_id"], d["product_id"]
-    return None, None
 
+
+controller = BS2ProController()
+config_manager = ConfigManager(CONFIG_FILE, DEFAULT_SETTINGS)
 def send_command(hex_cmd):
-    try:
-        vid, pid = detect_bs2pro()
-        if vid is None or pid is None:
-            print("❌ BS2PRO device not found.")
-            return
-        dev = hid.Device(vid=vid, pid=pid)
-        payload = bytes.fromhex(hex_cmd)
-        dev.write(payload)
-        dev.read(32, timeout=1000)
-        dev.close()
-    except Exception as e:
-        print(f"⚠️ HID error: {e}")
+    return controller.send_command(hex_cmd, status_callback=lambda msg, style: device_status_label.config(text=msg, bootstyle=style))
 
 def save_setting(key, value):
-    config = configparser.ConfigParser()
-    if os.path.exists(CONFIG_FILE):
-        config.read(CONFIG_FILE)
-    if "Settings" not in config:
-        config["Settings"] = {}
-    config["Settings"][key] = str(value)
-    with open(CONFIG_FILE, "w") as f:
-        config.write(f)
+    config_manager.save_setting(key, value)
 
 def load_setting(key, default=None):
-    config = configparser.ConfigParser()
-    if os.path.exists(CONFIG_FILE):
-        config.read(CONFIG_FILE)
-        return config.get("Settings", key, fallback=default)
-    return default
+    return config_manager.load_setting(key, default)
 
 def initialize_settings():
-    if not os.path.exists(CONFIG_DIR):
-        os.makedirs(CONFIG_DIR)
-    if not os.path.exists(CONFIG_FILE):
-        config = configparser.ConfigParser()
-        config["Settings"] = DEFAULT_SETTINGS
-        with open(CONFIG_FILE, "w") as f:
-            config.write(f)
-        return True
-    return False
+    return config_manager.initialize_settings()
 
 def apply_initial_settings():
     rpm = int(DEFAULT_SETTINGS["last_rpm"])
@@ -106,30 +79,40 @@ def apply_initial_settings():
 
 def on_rpm_select(event=None):
     rpm = int(rpm_combobox.get())
-    send_command(RPM_COMMANDS[rpm])
+    success = send_command(RPM_COMMANDS[rpm])
     rpm_display_label.config(text=f"Fan Speed: {rpm} RPM")
     save_setting("last_rpm", rpm)
+    if not success:
+        rpm_display_label.config(text=f"Failed to set RPM: {rpm}")
 
 def on_rpm_toggle():
     state = rpm_var.get()
     cmd = COMMANDS["rpm_on"] if state else COMMANDS["rpm_off"]
-    send_command(cmd)
+    success = send_command(cmd)
     save_setting("rpm_indicator", str(state))
+    if not success:
+        device_status_label.config(text="Failed to toggle RPM indicator", bootstyle="danger")
 
 def on_autostart_select(event=None):
     mode = autostart_combobox.get()
     cmd = COMMANDS[f"autostart_{mode.lower()}"]
-    send_command(cmd)
+    success = send_command(cmd)
     save_setting("autostart_mode", mode)
+    if not success:
+        device_status_label.config(text="Failed to set autostart mode", bootstyle="danger")
 
 def on_start_toggle():
     state = start_var.get()
+    success = True
     if state:
-        send_command(COMMANDS["startwhenpowered_on"])
+        success = send_command(COMMANDS["startwhenpowered_on"])
     else:
         for cmd in COMMANDS["startwhenpowered_off"]:
-            send_command(cmd)
+            if not send_command(cmd):
+                success = False
     save_setting("start_when_powered", str(state))
+    if not success:
+        device_status_label.config(text="Failed to toggle start when powered", bootstyle="danger")
 
 # Initialize settings
 first_run = initialize_settings()
@@ -176,8 +159,9 @@ main_frame.pack(fill="both", expand=True)
 device_status_label = tb.Label(main_frame, text="Detecting BS2PRO...", bootstyle="warning")
 device_status_label.pack(pady=(0, 10))
 
+    # Use controller to check device status
 def update_device_status():
-    vid, pid = detect_bs2pro()
+    vid, pid = controller.detect_bs2pro()
     if vid and pid:
         device_status_label.config(text=f"✅ BS2PRO detected (VID: {hex(vid)}, PID: {hex(pid)})", bootstyle="success")
     else:
