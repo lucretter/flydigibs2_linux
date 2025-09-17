@@ -1,0 +1,40 @@
+name: Build and Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev build-essential
+          sudo gem install --no-document fpm
+
+      - name: Build binary
+        run: pyinstaller --onefile --name bs2pro_controller bs2pro/main.py --hidden-import=PIL._tkinter_finder
+
+      - name: Build .deb and .rpm
+        run: |
+          fpm -s dir -t deb -n bs2pro_controller -v "${GITHUB_REF_NAME}" dist/bs2pro_controller
+          fpm -s dir -t rpm -n bs2pro_controller -v "${GITHUB_REF_NAME}" dist/bs2pro_controller
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.deb
+            *.rpm
