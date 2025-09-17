@@ -49,5 +49,4 @@ jobs:
           files: |
             *.deb
             *.rpm
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
