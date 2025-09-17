@@ -1,4 +1,8 @@
+
 name: Build and Release Packages
+
+permissions:
+  contents: write
 
 on:
   push:
