@@ -36,7 +36,7 @@ jobs:
           sudo gem install --no-document fpm
 
       - name: Build binary
-        run: pyinstaller --onefile --name bs2pro_controller bs2pro/main.py
+        run: pyinstaller --onefile --name bs2pro_controller bs2pro/main.py --hidden-import=PIL._tkinter_finder
 
       - name: Build .deb and .rpm
         run: |
