@@ -27,42 +27,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 
 ## 🛠️ Installation
 
-> **Note:** Tcl/Tk must be installed on your system for the application to run.
->
-> **Debian/Ubuntu:**
-> ```bash
-> sudo apt-get install -y tcl tk tcl8.6 tk8.6 python3-tk
-> ```
->
-> **Fedora/RedHat:**
-> ```bash
-> sudo dnf install -y tcl tk tcl-devel tk-devel python3-tkinter
-> ```
-
-### Install from .deb or .rpm (Recommended)
-
-Download the latest `.deb` (Debian/Ubuntu) or `.rpm` (Fedora/RedHat) package from the [Releases](https://github.com/lucretter/flydigibs2_linux/releases) page.
-
-**Debian/Ubuntu:**
-```bash
-sudo dpkg -i bs2pro_controller_*.deb
-```
-
-**Fedora/RedHat:**
-```bash
-sudo rpm -i bs2pro_controller-*.rpm
-```
-
-You can then run the app from anywhere using:
-```bash
-bs2pro_controller
-```
-
----
-
-### Manual Build & Install (Advanced)
-
-To build and install on other distros, use the provided install script:
+Use the provided install script:
 
 ```bash
 git clone https://github.com/lucretter/flydigibs2_linux.git
