@@ -23,9 +23,33 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - tkinter (usually bundled with Python)
 - Flydigi BS2Pro (might work on other models, haven't tested)
 
+
 ## 🛠️ Installation
 
-To install the BS2PRO Controller as a CLI tool and desktop app, simply run the provided install script:
+### Install from .deb or .rpm (Recommended)
+
+Download the latest `.deb` (Debian/Ubuntu) or `.rpm` (Fedora/RedHat) package from the [Releases](https://github.com/lucretter/flydigibs2_linux/releases) page.
+
+**Debian/Ubuntu:**
+```bash
+sudo dpkg -i bs2pro_controller_*.deb
+```
+
+**Fedora/RedHat:**
+```bash
+sudo rpm -i bs2pro_controller-*.rpm
+```
+
+You can then run the app from anywhere using:
+```bash
+bs2pro_controller
+```
+
+---
+
+### Manual Build & Install (Advanced)
+
+To build and install on other distros, use the provided install script:
 
 ```bash
 git clone https://github.com/lucretter/flydigibs2_linux.git
@@ -34,13 +58,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-This will automatically set up a Python virtual environment, install all required dependencies, build the executable, and install it to `/usr/bin/bs2pro_controller` (requires sudo for the final step).
-
-You can then run the app from anywhere using:
-
-```bash
-bs2pro_controller
-```
+This will set up a Python virtual environment, install dependencies, build the executable, and install it to `/usr/bin/bs2pro_controller` (requires sudo for the final step).
 
 ## 🚀 Usage
 
