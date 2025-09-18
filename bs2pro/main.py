@@ -30,7 +30,9 @@ COMMANDS = {
 }
 
 
+
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "bs2pro_controller")
+os.makedirs(CONFIG_DIR, exist_ok=True)  # Ensure log directory exists
 CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.ini")
 LOG_FILE = os.path.join(CONFIG_DIR, "bs2pro.log")
 
