@@ -24,7 +24,20 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - Flydigi BS2Pro (might work on other models, haven't tested)
 
 
+
 ## 🛠️ Installation
+
+> **Note:** Tcl/Tk must be installed on your system for the application to run.
+>
+> **Debian/Ubuntu:**
+> ```bash
+> sudo apt-get install -y tcl tk tcl8.6 tk8.6 python3-tk
+> ```
+>
+> **Fedora/RedHat:**
+> ```bash
+> sudo dnf install -y tcl tk tcl-devel tk-devel python3-tkinter
+> ```
 
 ### Install from .deb or .rpm (Recommended)
 
