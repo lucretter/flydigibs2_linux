@@ -48,8 +48,7 @@ jobs:
             --hidden-import=PIL._tkinter_finder \
             --hidden-import=hid \
             --hidden-import=hidapi \
-            --hidden-import=ttkbootstrap \
-            --add-data "$(python -c 'import tkinter; print(tkinter.__path__[0])')/../tcl:./tcl"
+            --hidden-import=ttkbootstrap
 
       - name: Build .deb and .rpm
         run: |
