@@ -32,13 +32,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller Pillow tk hidapi
+          pip install pyinstaller Pillow tk hidapi ttkbootstrap
           sudo apt-get update
           sudo apt-get install -y ruby ruby-dev build-essential libhidapi-libusb0 libhidapi-hidraw0
           sudo gem install --no-document fpm
 
       - name: Build binary
-        run: pyinstaller --onefile --name bs2pro_controller bs2pro/main.py --hidden-import=PIL._tkinter_finder --hidden-import=hid --hidden-import=hidapi
+        run: |
+          pyinstaller --onefile --name bs2pro_controller bs2pro/main.py \
+            --hidden-import=PIL._tkinter_finder \
+            --hidden-import=hid \
+            --hidden-import=hidapi \
+            --hidden-import=ttkbootstrap
 
       - name: Build .deb and .rpm
         run: |
