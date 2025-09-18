@@ -34,8 +34,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller Pillow tk hidapi ttkbootstrap
           sudo apt-get update
-          sudo apt-get install -y ruby ruby-dev build-essential libhidapi-libusb0 libhidapi-hidraw0
+          sudo apt-get install -y ruby ruby-dev build-essential libhidapi-libusb0 libhidapi-hidraw0 tcl8.6 tk8.6
           sudo gem install --no-document fpm
+
+      - name: Show Tcl path
+        run: |
+          echo "Tcl path: $(python -c 'import tkinter; print(tkinter.__path__[0])')/../tcl"
+          ls -l $(python -c 'import tkinter; print(tkinter.__path__[0])')/../tcl || echo "Tcl directory not found"
 
       - name: Build binary
         run: |
