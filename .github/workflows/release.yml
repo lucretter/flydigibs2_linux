@@ -37,6 +37,9 @@ jobs:
 
       - name: Create desktop file
         run: |
+          # Create icon directory
+          mkdir -p package-files/usr/share/pixmaps
+          cp icon.png package-files/usr/share/pixmaps/bs2pro-controller.png
           mkdir -p package-files/usr/share/applications
           cat > package-files/usr/share/applications/bs2pro-controller.desktop << EOF
           [Desktop Entry]
@@ -45,6 +48,7 @@ jobs:
           Name=BS2PRO Controller
           Comment=Controller for BS2PRO devices
           Exec=/usr/bin/bs2pro_controller
+          Exec=bs2pro_controller
           Icon=system-run
           Categories=Utility;
           Terminal=false
@@ -59,6 +63,8 @@ jobs:
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
             --collect-all hid  # Collect hidapi binaries
+            --collect-all hid \
+            --add-data "icon.png:." # Collect hidapi binaries
 
       - name: Build .deb with dependencies
         run: |
@@ -73,6 +79,8 @@ jobs:
             --category "utils" \
             dist/bs2pro_controller=/usr/bin/bs2pro_controller \
             package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/
+            package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/ \
+            package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/bs2pro-controller.png
 
       - name: Build .rpm with dependencies
         run: |
@@ -86,6 +94,8 @@ jobs:
             --category "Applications/System" \
             dist/bs2pro_controller=/usr/bin/bs2pro_controller \
             package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/
+            package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/ \
+            package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/bs2pro-controller.png
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
