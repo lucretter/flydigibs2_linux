@@ -77,7 +77,6 @@ jobs:
             --maintainer "Lucretter" \
             --category "utils" \
             dist/bs2pro_controller=/usr/bin/bs2pro_controller \
-            package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/
             package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/ \
             package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/bs2pro-controller.png
 
@@ -92,7 +91,6 @@ jobs:
             --maintainer "Lucretter" \
             --category "Applications/System" \
             dist/bs2pro_controller=/usr/bin/bs2pro_controller \
-            package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/
             package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/ \
             package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/bs2pro-controller.png
 
