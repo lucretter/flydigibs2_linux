@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 from controller import BS2ProController
 from config import ConfigManager
 from gui import BS2ProGUI
-from udev_manager import UdevRulesManager  # Add this import
+from udev_manager import UdevRulesManager
 
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",
@@ -48,11 +48,19 @@ DEFAULT_SETTINGS = {
     "rpm_indicator": "True",
     "start_when_powered": "True",
     "autostart_mode": "Instant",
-    "udev_rules_installed": "False"  # Add this setting
+    "udev_rules_installed": "False"
 }
 
 def check_and_prompt_udev_rules(controller, config_manager):
     """Check if udev rules are needed and prompt user if necessary"""
+    # Import tkinter here to avoid issues with CLI mode
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+    except ImportError:
+        logging.warning("tkinter not available, skipping udev rules prompt")
+        return
+    
     # Detect device to get vendor and product IDs
     vid, pid = controller.detect_bs2pro()
     
@@ -120,8 +128,11 @@ if __name__ == "__main__":
     # Initialize settings if this is the first run
     config_manager.initialize_settings()
     
-    # Check and prompt for udev rules if needed
+    # Handle CLI args first (before any GUI stuff)
+    handle_cli_args(controller, config_manager)
+    
+    # Check and prompt for udev rules if needed (only in GUI mode)
     check_and_prompt_udev_rules(controller, config_manager)
     
-    handle_cli_args(controller, config_manager)
+    # Start the GUI
     BS2ProGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS)

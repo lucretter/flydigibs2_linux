@@ -1,8 +1,7 @@
 import os
 import subprocess
 import tempfile
-import tkinter as tk
-from tkinter import messagebox
+import logging
 
 class UdevRulesManager:
     def __init__(self, vendor_id, product_id):
@@ -47,20 +46,32 @@ SUBSYSTEM=="usb", ATTRS{{idVendor}}=="{vendor_id:04x}", ATTRS{{idProduct}}=="{pr
                               capture_output=True)
                 
                 if parent_window:
-                    messagebox.showinfo("Success", 
-                                      "udev rules installed successfully!\n"
-                                      "You may need to reconnect your BS2PRO device.")
+                    try:
+                        from tkinter import messagebox
+                        messagebox.showinfo("Success", 
+                                          "udev rules installed successfully!\n"
+                                          "You may need to reconnect your BS2PRO device.")
+                    except ImportError:
+                        print("udev rules installed successfully!")
                 return True
             else:
                 if parent_window:
-                    messagebox.showerror("Error", 
-                                       "Failed to install udev rules.\n"
-                                       "Please check your sudo permissions.")
+                    try:
+                        from tkinter import messagebox
+                        messagebox.showerror("Error", 
+                                           "Failed to install udev rules.\n"
+                                           "Please check your sudo permissions.")
+                    except ImportError:
+                        print("Failed to install udev rules. Please check your sudo permissions.")
                 return False
                 
         except Exception as e:
             if parent_window:
-                messagebox.showerror("Error", f"Failed to install udev rules: {str(e)}")
+                try:
+                    from tkinter import messagebox
+                    messagebox.showerror("Error", f"Failed to install udev rules: {str(e)}")
+                except ImportError:
+                    print(f"Failed to install udev rules: {str(e)}")
             return False
         finally:
             # Clean up temporary file
@@ -76,19 +87,30 @@ SUBSYSTEM=="usb", ATTRS{{idVendor}}=="{vendor_id:04x}", ATTRS{{idProduct}}=="{pr
 
     def prompt_for_udev_installation(self, parent_window):
         """Prompt user to install udev rules"""
-        message = (
-            "To use BS2PRO Controller without sudo privileges, "
-            "udev rules need to be installed.\n\n"
-            "This will allow non-root users to access your BS2PRO device.\n\n"
-            "Do you want to install udev rules now? (requires sudo password)"
-        )
-        
-        result = messagebox.askyesno(
-            "Install udev Rules", 
-            message,
-            parent=parent_window
-        )
-        
-        if result:
-            return self.install_udev_rules(parent_window)
-        return False
+        try:
+            from tkinter import messagebox
+            
+            message = (
+                "To use BS2PRO Controller without sudo privileges, "
+                "udev rules need to be installed.\n\n"
+                "This will allow non-root users to access your BS2PRO device.\n\n"
+                "Do you want to install udev rules now? (requires sudo password)"
+            )
+            
+            result = messagebox.askyesno(
+                "Install udev Rules", 
+                message,
+                parent=parent_window
+            )
+            
+            if result:
+                return self.install_udev_rules(parent_window)
+            return False
+            
+        except ImportError:
+            # Fallback to terminal prompt if tkinter is not available
+            print("To use BS2PRO Controller without sudo, udev rules need to be installed.")
+            response = input("Do you want to install udev rules now? (y/N): ")
+            if response.lower() in ['y', 'yes']:
+                return self.install_udev_rules()
+            return False
