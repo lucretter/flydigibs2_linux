@@ -64,8 +64,7 @@ jobs:
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
             --collect-all hid  # Collect hidapi binaries
-            --collect-all hid \
-            --add-data "icon.png:." # Collect hidapi binaries
+            --collect-all hid  --add-data "bs2pro/icon.png:." # Collect hidapi binaries
 
       - name: Build .deb with dependencies
         run: |
