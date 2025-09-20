@@ -131,3 +131,11 @@ tail -f ~/.config/bs2pro_controller/bs2pro.log
 
 - Designed for KDE/Linux but should be cross-platform compatible  
 - CLI mode for scripting or automation 
+
+## 🤝 Contributing
+
+Feel free to:
+
+- Report issues and bugs  
+- Suggest new features  
+- Submit pull requests  
