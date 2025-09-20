@@ -26,7 +26,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             ruby ruby-dev build-essential \
-            tcl8.6 tk8.6 tcllib   # keep Tk for GUI
+            tcl8.6 tk8.6 tcllib \
+            libhidapi-hidraw0 libhidapi-libusb0  # Add HID libraries
           sudo gem install --no-document fpm
 
       - name: Install Python dependencies
@@ -34,21 +35,57 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller Pillow tk hid ttkbootstrap
 
-      - name: Build binary (using spec if you bundled msgcat)
+      - name: Create desktop file
+        run: |
+          mkdir -p package-files/usr/share/applications
+          cat > package-files/usr/share/applications/bs2pro-controller.desktop << EOF
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Name=BS2PRO Controller
+          Comment=Controller for BS2PRO devices
+          Exec=/usr/bin/bs2pro_controller
+          Icon=system-run
+          Categories=Utility;
+          Terminal=false
+          StartupNotify=false
+          EOF
+
+      - name: Build binary
         run: |
           pyinstaller --onefile --name bs2pro_controller bs2pro/main.py \
             --hidden-import=PIL._tkinter_finder \
             --hidden-import=hid \
             --hidden-import=hidapi \
-            --hidden-import=ttkbootstrap
+            --hidden-import=ttkbootstrap \
+            --collect-all hid  # Collect hidapi binaries
 
-      - name: Build .deb and .rpm
+      - name: Build .deb with dependencies
         run: |
-          fpm -s dir -t deb -n bs2pro_controller -v "${GITHUB_REF_NAME}" \
-              dist/bs2pro_controller=/usr/bin/bs2pro_controller
+          # Create .deb with proper dependencies
+          fpm -s dir -t deb -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
+            -d "libhidapi-hidraw0" \
+            -d "libhidapi-libusb0" \
+            -d "python3-tk" \
+            --description "Controller for BS2PRO devices" \
+            --url "https://github.com/lucretter/flydigibs2_linux" \
+            --maintainer "Lucretter" \
+            --category "utils" \
+            dist/bs2pro_controller=/usr/bin/bs2pro_controller \
+            package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/
 
-          fpm -s dir -t rpm -n bs2pro_controller -v "${GITHUB_REF_NAME}" \
-              dist/bs2pro_controller=/usr/bin/bs2pro_controller
+      - name: Build .rpm with dependencies
+        run: |
+          # Create .rpm with proper dependencies
+          fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
+            -d "hidapi" \
+            -d "python3-tkinter" \
+            --description "Controller for BS2PRO devices" \
+            --url "https://github.com/lucretter/flydigibs2_linux" \
+            --maintainer "Lucretter" \
+            --category "Applications/System" \
+            dist/bs2pro_controller=/usr/bin/bs2pro_controller \
+            package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
@@ -57,4 +94,4 @@ jobs:
             *.deb
             *.rpm
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
