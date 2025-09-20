@@ -45,10 +45,21 @@ jobs:
 
       - name: Build .deb and .rpm
         run: |
+          # Build .deb package with dependencies + udev rule
           fpm -s dir -t deb -n bs2pro_controller -v "${GITHUB_REF_NAME}" \
-              dist/bs2pro_controller=/usr/bin/bs2pro_controller
+              --deb-no-default-config-files \
+              --depends "libhidapi-libusb0" \
+              --depends "libhidapi-hidraw0" \
+              --depends "libusb-1.0-0" \
+              dist/bs2pro_controller=/usr/bin/bs2pro_controller \
+              99-bs2pro.rules=/etc/udev/rules.d/99-bs2pro.rules
+
+          # Build .rpm package with dependencies + udev rule
           fpm -s dir -t rpm -n bs2pro_controller -v "${GITHUB_REF_NAME}" \
-              dist/bs2pro_controller=/usr/bin/bs2pro_controller
+              --depends "hidapi" \
+              --depends "libusb1" \
+              dist/bs2pro_controller=/usr/bin/bs2pro_controller \
+              99-bs2pro.rules=/etc/udev/rules.d/99-bs2pro.rules
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
