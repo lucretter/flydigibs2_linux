@@ -1,7 +1,8 @@
 
 > **Disclaimer:**
 > This tool was was mostly developped with the help of AI, i’m not a developer, just someone tinkering with AI to solve a specific need. I thought it might come in handy for others, so I’m sharing it. 
-Note : RGB controls are not implemented because I have no use for it.
+> Note : RGB controls are not implemented because I have no use for it.
+> This tool is provided as-is. While I've tested it with my BS2PRO unit, your experience may vary. Always ensure you understand what the tool does before running it.
 
 # 🌀 BS2PRO Controller
 
@@ -27,7 +28,30 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 
 ## 🛠️ Installation
 
-Use the provided install script:
+### Install .deb Package (Debian/Ubuntu)
+
+```bash
+# Download the latest .deb package from Releases
+wget https://github.com/lucretter/flydigibs2_linux/releases/latest/download/bs2pro-controller.deb
+
+# Install the package
+sudo dpkg -i bs2pro-controller.deb
+
+# Install dependencies if needed
+sudo apt-get install -f
+```
+
+### Install .rpm Package (Fedora/RHEL/CentOS)
+
+```bash
+# Download the latest .rpm package from Releases
+wget https://github.com/lucretter/flydigibs2_linux/releases/latest/download/bs2pro-controller.rpm
+
+# Install the package
+sudo rpm -i bs2pro-controller.rpm
+```
+
+### You can also install with the installation script
 
 ```bash
 git clone https://github.com/lucretter/flydigibs2_linux.git
@@ -36,7 +60,37 @@ chmod +x install.sh
 ./install.sh
 ```
 
-This will set up a Python virtual environment, install dependencies, build the executable, and install it to `/usr/bin/bs2pro_controller` (requires sudo for the final step).
+This will:
+
+- Set up a Python virtual environment  
+- Install dependencies  
+- Build the executable  
+- Install it to `/usr/bin/bs2pro_controller`  
+
+## 🔐 First Run Setup - udev Rules Prompt
+
+On first launch, the application will automatically detect your BS2PRO device and prompt you to install udev rules if necessary.
+
+Udev rule is needed so the application can run without sudo.
+
+### If the prompt doesn't appear or fails:
+
+You can manually install udev rules:
+
+```bash
+# Find your device's vendor and product ID
+lsusb
+
+# Create udev rules (replace VENDOR_ID and PRODUCT_ID with your values)
+echo 'SUBSYSTEM=="hidraw", ATTRS{idVendor}=="VENDOR_ID", ATTRS{idProduct}=="PRODUCT_ID", MODE="0666", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="VENDOR_ID", ATTRS{idProduct}=="PRODUCT_ID", MODE="0666", GROUP="plugdev"' | sudo tee /etc/udev/rules.d/99-bs2pro.rules
+
+# Reload udev rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+# Reconnect your BS2PRO device
+```
 
 ## 🚀 Usage
 
@@ -61,6 +115,17 @@ Supported CLI commands:
 - `rpm_on`, `rpm_off`
 - `autostart_off`, `autostart_instant`, `autostart_delayed`
 - `startwhenpowered_on`, `startwhenpowered_off`
+
+### Logs and Debugging
+
+Application logs are stored at:  
+`~/.config/bs2pro_controller/bs2pro.log`
+
+To view logs in real-time:
+
+```bash
+tail -f ~/.config/bs2pro_controller/bs2pro.log
+```
 
 ## 🧪 Development Notes
 
