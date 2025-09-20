@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -7,6 +8,8 @@ from controller import BS2ProController
 from config import ConfigManager
 from gui import BS2ProGUI
 from udev_manager import UdevRulesManager
+
+ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
 
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",
@@ -34,6 +37,16 @@ CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "bs2pro_controller
 os.makedirs(CONFIG_DIR, exist_ok=True)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.ini")
 LOG_FILE = os.path.join(CONFIG_DIR, "bs2pro.log")
+
+# Add icon path detection
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    base_path = sys._MEIPASS
+else:
+    # Running as script
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+ICON_PATH = os.path.join(base_path, "icon.png")
 
 # Set up log rotation: 1MB per file, keep 3 backups
 log_handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=3)
@@ -135,4 +148,4 @@ if __name__ == "__main__":
     check_and_prompt_udev_rules(controller, config_manager)
     
     # Start the GUI
-    BS2ProGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS)
+    BS2ProGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)

@@ -57,7 +57,7 @@ class BS2ProGUI:
 
     def reset_status_message(self):
         self.update_device_status()
-    def __init__(self, controller, config_manager, rpm_commands, commands, default_settings):
+    def __init__(self, controller, config_manager, rpm_commands, commands, default_settings, icon_path=None):
         self.controller = controller
         self.config_manager = config_manager
         self.rpm_commands = rpm_commands
@@ -67,10 +67,19 @@ class BS2ProGUI:
         self.root.title("BS2PRO Controller")
         self.root.geometry("400x400")
         self.root.resizable(True, True)
-        self.setup_styles()
-        self.setup_widgets()
-        self.update_device_status()
-        self.root.mainloop()
+        
+        # Set window icon if provided
+        if icon_path and os.path.exists(icon_path):
+            try:
+                self.icon = tk.PhotoImage(file=icon_path)
+                self.root.iconphoto(True, self.icon)
+            except Exception as e:
+                logging.warning(f"Could not load icon: {e}")
+    
+    self.setup_styles()
+    self.setup_widgets()
+    self.update_device_status()
+    self.root.mainloop()
 
     def setup_styles(self):
         self.root.style.configure("TLabel", font=("Segoe UI", 13))

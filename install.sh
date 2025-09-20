@@ -44,7 +44,7 @@ echo "Installing required Python packages in venv..."
 pip install hid ttkbootstrap
 
 # Build executable
-pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" --hidden-import=PIL._tkinter_finder
+pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" --hidden-import=PIL._tkinter_finder --add-data "icon.png:."
 
 # Move executable to /usr/bin (requires sudo)
 EXE_PATH="dist/$APP_NAME"
