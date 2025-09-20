@@ -39,7 +39,7 @@ jobs:
         run: |
           # Create icon directory
           mkdir -p package-files/usr/share/pixmaps
-          cp icon.png package-files/usr/share/pixmaps/bs2pro-controller.png
+          cp bs2pro/icon.png package-files/usr/share/pixmaps/bs2pro-controller.png
           mkdir -p package-files/usr/share/applications
           cat > package-files/usr/share/applications/bs2pro-controller.desktop << EOF
           [Desktop Entry]
@@ -48,8 +48,9 @@ jobs:
           Name=BS2PRO Controller
           Comment=Controller for BS2PRO devices
           Exec=/usr/bin/bs2pro_controller
-          Exec=bs2pro_controller
           Icon=system-run
+          Exec=bs2pro_controller
+          Icon=/usr/share/pixmaps/bs2pro-controller.png
           Categories=Utility;
           Terminal=false
           StartupNotify=false
