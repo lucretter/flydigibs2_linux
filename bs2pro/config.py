@@ -24,13 +24,32 @@ class ConfigManager:
         return default
 
     def initialize_settings(self):
+        """Initialize settings file with defaults if it doesn't exist"""
         config_dir = os.path.dirname(self.config_file)
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
+        
         if not os.path.exists(self.config_file):
             config = configparser.ConfigParser()
             config["Settings"] = self.default_settings
             with open(self.config_file, "w") as f:
                 config.write(f)
             return True
-        return False
+        
+        # Ensure all default settings exist
+        config = configparser.ConfigParser()
+        config.read(self.config_file)
+        if "Settings" not in config:
+            config["Settings"] = {}
+        
+        updated = False
+        for key, value in self.default_settings.items():
+            if key not in config["Settings"]:
+                config["Settings"][key] = value
+                updated = True
+                
+        if updated:
+            with open(self.config_file, "w") as f:
+                config.write(f)
+                
+        return updated

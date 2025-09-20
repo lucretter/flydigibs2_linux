@@ -3,9 +3,6 @@
 
 set -e
 
-set -e
-
-
 # Detect python command (python3 or python)
 PYTHON_CMD=""
 if command -v python3 &>/dev/null; then
@@ -34,15 +31,13 @@ fi
 source "$VENV_DIR/bin/activate"
 
 APP_NAME="bs2pro_controller"
-MAIN_SCRIPT="bs2pro/main.py"
-
+MAIN_SCRIPT="main.py"
 
 # Check for PyInstaller, install if missing
 if ! "$VENV_DIR/bin/pyinstaller" --version &> /dev/null; then
     echo "PyInstaller not found in venv. Installing..."
     pip install pyinstaller
 fi
-
 
 # Ensure required Python packages are installed in venv
 echo "Installing required Python packages in venv..."
@@ -61,3 +56,6 @@ else
     echo "Build failed: $EXE_PATH not found."
     exit 1
 fi
+
+echo "Installation complete!"
+echo "Note: udev rules will be automatically prompted on first run for device access without sudo."

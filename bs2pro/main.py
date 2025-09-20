@@ -6,6 +6,7 @@ from logging.handlers import RotatingFileHandler
 from controller import BS2ProController
 from config import ConfigManager
 from gui import BS2ProGUI
+from udev_manager import UdevRulesManager  # Add this import
 
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",
@@ -29,10 +30,8 @@ COMMANDS = {
     ]
 }
 
-
-
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "bs2pro_controller")
-os.makedirs(CONFIG_DIR, exist_ok=True)  # Ensure log directory exists
+os.makedirs(CONFIG_DIR, exist_ok=True)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.ini")
 LOG_FILE = os.path.join(CONFIG_DIR, "bs2pro.log")
 
@@ -48,8 +47,44 @@ DEFAULT_SETTINGS = {
     "last_rpm": "1300",
     "rpm_indicator": "True",
     "start_when_powered": "True",
-    "autostart_mode": "Instant"
+    "autostart_mode": "Instant",
+    "udev_rules_installed": "False"  # Add this setting
 }
+
+def check_and_prompt_udev_rules(controller, config_manager):
+    """Check if udev rules are needed and prompt user if necessary"""
+    # Detect device to get vendor and product IDs
+    vid, pid = controller.detect_bs2pro()
+    
+    if vid is None or pid is None:
+        logging.warning("BS2PRO device not detected, skipping udev check")
+        return
+    
+    # Check if udev rules are already marked as installed in config
+    udev_installed = config_manager.load_setting("udev_rules_installed", "False") == "True"
+    
+    if udev_installed:
+        logging.info("udev rules already marked as installed in config")
+        return
+    
+    # Create udev manager and check if rules exist
+    udev_manager = UdevRulesManager(vid, pid)
+    
+    if not udev_manager.udev_rules_exist():
+        # Rules don't exist, prompt user to install them
+        logging.info("udev rules not found, prompting user for installation")
+        
+        # Create a temporary root window for the dialog
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        
+        # Prompt user
+        udev_manager.prompt_for_udev_installation(root)
+        
+        # Mark as installed in config (even if user declined, to avoid repeated prompts)
+        config_manager.save_setting("udev_rules_installed", "True")
+        
+        root.destroy()
 
 def handle_cli_args(controller, config_manager):
     import sys
@@ -81,5 +116,12 @@ def handle_cli_args(controller, config_manager):
 if __name__ == "__main__":
     controller = BS2ProController()
     config_manager = ConfigManager(CONFIG_FILE, DEFAULT_SETTINGS)
+    
+    # Initialize settings if this is the first run
+    config_manager.initialize_settings()
+    
+    # Check and prompt for udev rules if needed
+    check_and_prompt_udev_rules(controller, config_manager)
+    
     handle_cli_args(controller, config_manager)
     BS2ProGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS)
