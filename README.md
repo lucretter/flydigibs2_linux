@@ -1,7 +1,7 @@
 
 > **Disclaimer:**
-> This tool was was mostly developped with the help of AI, i’m not a developer, just someone tinkering with AI to solve a specific need. I thought it might come in handy for others, so I’m sharing it. 
-> Note : RGB controls are not implemented because I have no use for it.
+> This tool was was mostly developped with the help of AI, i’m not a developer, just someone tinkering with AI to solve a specific need. I thought it might come in handy for others, so I’m sharing it. <br>
+> Note : RGB controls are not implemented because I have no use for it.<br>
 > This tool is provided as-is. While I've tested it with my BS2PRO unit, your experience may vary. Always ensure you understand what the tool does before running it.
 
 # 🌀 BS2PRO Controller
