@@ -13,7 +13,7 @@ class BS2ProGUI:
         self.default_settings = default_settings
         self.root = tb.Window(themename="darkly")
         self.root.title("BS2PRO Controller")
-        self.root.geometry("400x400")
+        self.root.geometry("450x450")
         self.root.resizable(True, True)
         
         # Set window icon if provided - CORRECTLY PLACED INSIDE __init__
