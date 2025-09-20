@@ -1,8 +1,34 @@
 import tkinter as tk
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
+import os
+import logging
 
 class BS2ProGUI:
+    def __init__(self, controller, config_manager, rpm_commands, commands, default_settings, icon_path=None):
+        self.controller = controller
+        self.config_manager = config_manager
+        self.rpm_commands = rpm_commands
+        self.commands = commands
+        self.default_settings = default_settings
+        self.root = tb.Window(themename="darkly")
+        self.root.title("BS2PRO Controller")
+        self.root.geometry("400x400")
+        self.root.resizable(True, True)
+        
+        # Set window icon if provided - CORRECTLY PLACED INSIDE __init__
+        if icon_path and os.path.exists(icon_path):
+            try:
+                self.icon = tk.PhotoImage(file=icon_path)
+                self.root.iconphoto(True, self.icon)
+            except Exception as e:
+                logging.warning(f"Could not load icon: {e}")
+        
+        self.setup_styles()
+        self.setup_widgets()
+        self.update_device_status()
+        self.root.mainloop()
+
     def on_rpm_select(self, event=None):
         rpm = int(self.rpm_combobox.get())
         def status_callback(msg, style):
@@ -13,7 +39,6 @@ class BS2ProGUI:
         self.config_manager.save_setting("last_rpm", rpm)
         if not success:
             self.rpm_display_label.config(text=f"Failed to set RPM: {rpm}")
-
 
     def on_rpm_toggle(self):
         state = self.rpm_var.get()
@@ -26,7 +51,6 @@ class BS2ProGUI:
         if not success:
             self.device_status_label.config(text="Failed to toggle RPM indicator", bootstyle="danger")
 
-
     def on_autostart_select(self, event=None):
         mode = self.autostart_combobox.get()
         cmd = self.commands[f"autostart_{mode.lower()}"]
@@ -37,7 +61,6 @@ class BS2ProGUI:
         self.config_manager.save_setting("autostart_mode", mode)
         if not success:
             self.device_status_label.config(text="Failed to set autostart mode", bootstyle="danger")
-
 
     def on_start_toggle(self):
         state = self.start_var.get()
@@ -57,30 +80,7 @@ class BS2ProGUI:
 
     def reset_status_message(self):
         self.update_device_status()
-    def __init__(self, controller, config_manager, rpm_commands, commands, default_settings, icon_path=None):
-        self.controller = controller
-        self.config_manager = config_manager
-        self.rpm_commands = rpm_commands
-        self.commands = commands
-        self.default_settings = default_settings
-        self.root = tb.Window(themename="darkly")
-        self.root.title("BS2PRO Controller")
-        self.root.geometry("400x400")
-        self.root.resizable(True, True)
         
-        # Set window icon if provided
-        if icon_path and os.path.exists(icon_path):
-            try:
-                self.icon = tk.PhotoImage(file=icon_path)
-                self.root.iconphoto(True, self.icon)
-            except Exception as e:
-                logging.warning(f"Could not load icon: {e}")
-    
-    self.setup_styles()
-    self.setup_widgets()
-    self.update_device_status()
-    self.root.mainloop()
-
     def setup_styles(self):
         self.root.style.configure("TLabel", font=("Segoe UI", 13))
         self.root.style.configure("TButton", font=("Segoe UI", 13))
