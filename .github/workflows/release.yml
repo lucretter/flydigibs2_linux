@@ -58,12 +58,15 @@ jobs:
 
       - name: Build binary
         run: |
-          pyinstaller --onefile --name bs2pro_controller bs2pro/main.py \
+          pyinstaller --noconfirm --onefile --name bs2pro_controller bs2pro/main.py \
             --hidden-import=PIL._tkinter_finder \
             --hidden-import=hid \
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
-            --collect-all hid --add-data "bs2pro/icon.png:." # Collect hidapi binaries
+            --collect-all hid \
+            --collect-data tk \
+            --collect-data tcl \
+            --add-data "bs2pro/icon.png:."
 
       - name: Build .deb with dependencies
         run: |
