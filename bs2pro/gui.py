@@ -10,7 +10,8 @@ try:
 except ImportError:
     pass  # tcl_init not available, continue anyway
 
-import ttkbootstrap as tb 
+# Import ttkbootstrap with locale fixes
+import ttkbootstrap_fixed as tb
 from ttkbootstrap.constants import *
 
 class BS2ProGUI:

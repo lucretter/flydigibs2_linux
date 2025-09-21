@@ -105,18 +105,18 @@ def ensure_msgcat_stubs():
                 }
                 proc mcpreferences {} {
                     # Return default locale list
-                    return [list en US]
+                    return [list en_US en US]
                 }
                 proc mclocale {{locale ""}} {
                     # Return or set locale
                     if {$locale eq ""} {
-                        return en
+                        return en_US
                     }
-                    return en
+                    return en_US
                 }
                 proc mcloadedlocales {} {
                     # Return loaded locales
-                    return [list en]
+                    return [list en_US en]
                 }
                 proc mcload {dir} {
                     # Stub for loading message catalogs
@@ -137,9 +137,9 @@ def ensure_msgcat_stubs():
                         if {$value eq ""} { return $key } else { return $value }
                     }
                     proc mc {key args} { return $key }
-                    proc mcpreferences {} { return [list en US] }
-                    proc mclocale {{locale ""}} { return en }
-                    proc mcloadedlocales {} { return [list en] }
+                    proc mcpreferences {} { return [list en_US en US] }
+                    proc mclocale {{locale ""}} { return en_US }
+                    proc mcloadedlocales {} { return [list en_US en] }
                     proc mcload {dir} { return 1 }
                 }
             ''')
