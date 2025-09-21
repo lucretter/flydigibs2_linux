@@ -54,6 +54,22 @@ class TrayManager:
             # Set default action for left-click
             self.tray_icon.default_action = self.show_window
             
+            # Try to set up click handlers manually
+            try:
+                # Override the click handler
+                original_on_click = getattr(self.tray_icon, '_on_click', None)
+                if original_on_click:
+                    def enhanced_click(icon, item):
+                        logging.info(f"Tray icon clicked - icon: {icon}, item: {item}")
+                        print(f"DEBUG: Tray clicked with item: {item}")
+                        if item is None:  # Left click
+                            self.show_window(icon, item)
+                        else:
+                            original_on_click(icon, item)
+                    self.tray_icon._on_click = enhanced_click
+            except Exception as e:
+                logging.warning(f"Could not set up enhanced click handler: {e}")
+            
             return True
         except Exception as e:
             logging.error(f"Error creating tray icon: {e}")
@@ -160,25 +176,33 @@ class TrayManager:
             return False
             
         try:
-            # Run tray icon in a separate thread
+            # Try running the tray icon in a different way
             import threading
+            import time
+            
             def run_tray():
                 try:
                     logging.info("Starting tray icon thread")
-                    # Start the tray icon - this will block until stopped
-                    self.tray_icon.run()
+                    # Use run_detached if available, otherwise use run
+                    if hasattr(self.tray_icon, 'run_detached'):
+                        logging.info("Using run_detached method")
+                        self.tray_icon.run_detached()
+                    else:
+                        logging.info("Using run method")
+                        self.tray_icon.run()
                 except Exception as e:
                     logging.error(f"Error in tray thread: {e}")
             
+            # Start the tray thread
             tray_thread = threading.Thread(target=run_tray, daemon=True)
             tray_thread.start()
             
-            # Give it a moment to start
-            import time
+            # Give it time to start
             time.sleep(1.0)
             
             logging.info("System tray icon started successfully")
             return True
+                
         except Exception as e:
             logging.error(f"Error starting tray icon: {e}")
             return False
