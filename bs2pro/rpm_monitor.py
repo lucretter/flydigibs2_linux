@@ -105,12 +105,16 @@ class RPMMonitor:
     def _close_device(self):
         """Close HID device"""
         if self.device:
+            logging.info("Closing HID device")
             try:
                 if hasattr(self.device, 'close'):
                     self.device.close()
                 self.device = None
+                logging.info("HID device closed successfully")
             except Exception as e:
                 logging.error(f"Error closing HID device: {e}")
+        else:
+            logging.debug("No device to close")
     
     def _is_device_open(self):
         """Check if device is open and accessible"""
@@ -229,18 +233,25 @@ class RPMMonitor:
                     # Try with timeout first, fallback to without timeout
                     if hasattr(self.device, 'read'):
                         try:
+                            logging.debug("Trying read with timeout...")
                             data = self.device.read(32, timeout=1000)  # 1000ms timeout
+                            logging.info(f"Read completed, data: {data}")
                             if data:
                                 logging.info(f"Raw data: {data.hex()}")
                             else:
-                                logging.debug("No data received (timeout)")
+                                logging.info("No data received (timeout)")
                         except TypeError:
                             # Some versions don't support timeout parameter
+                            logging.debug("Timeout not supported, trying without timeout...")
                             data = self.device.read(32)
+                            logging.info(f"Read completed, data: {data}")
                             if data:
                                 logging.info(f"Raw data: {data.hex()}")
                             else:
-                                logging.debug("No data received (no timeout)")
+                                logging.info("No data received (no timeout)")
+                        except Exception as e:
+                            logging.error(f"Read error: {e}")
+                            data = None
                     else:
                         logging.warning("Device has no read method")
                         time.sleep(interval)
@@ -273,8 +284,9 @@ class RPMMonitor:
                             logging.debug(f"Alternative read also failed: {e}")
                     
                 except Exception as e:
-                    logging.debug(f"Error reading from device: {e}")
+                    logging.error(f"Error reading from device: {e}")
                     # Device might have disconnected, try to reconnect
+                    logging.info("Closing device due to read error")
                     self._close_device()
                     time.sleep(1)
                     
