@@ -6,11 +6,6 @@ import sys
 base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
 msgcat_path = os.path.join(base_path, 'tcl', 'msgcat.tcl')
 
-# Manually source msgcat.tcl to define ::msgcat namespace
-if os.path.exists(msgcat_path):
-    # Create a temporary Tcl interpreter just to source msgcat.tcl
-    interp = tk.Tcl()
-    interp.eval(f'source "{msgcat_path}"')
 import ttkbootstrap as tb 
 from ttkbootstrap.constants import *
 import logging
@@ -23,6 +18,13 @@ class BS2ProGUI:
         self.commands = commands
         self.default_settings = default_settings
         self.root = tb.Window(themename="darkly")
+        msgcat_path = os.path.join(
+            getattr(sys, '_MEIPASS', os.path.dirname(__file__)),
+            'tcl',
+            'msgcat.tcl'
+        )
+        if os.path.exists(msgcat_path):
+            self.root.tk.eval(f'source "{msgcat_path}"')
         self.root.title("BS2PRO Controller")
         self.root.geometry("450x450")
         self.root.resizable(True, True)
