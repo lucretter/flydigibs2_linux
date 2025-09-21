@@ -1,0 +1,35 @@
+{
+  "enabled": false,
+  "temperature_ranges": [
+    {
+      "min_temp": 0.0,
+      "max_temp": 55.0,
+      "rpm": 1300,
+      "description": "Low temperature"
+    },
+    {
+      "min_temp": 55.0,
+      "max_temp": 60.0,
+      "rpm": 1700,
+      "description": "Normal temperature"
+    },
+    {
+      "min_temp": 60.0,
+      "max_temp": 70.0,
+      "rpm": 1900,
+      "description": "Warm temperature"
+    },
+    {
+      "min_temp": 70.0,
+      "max_temp": 80.0,
+      "rpm": 2100,
+      "description": "Hot temperature"
+    },
+    {
+      "min_temp": 80.0,
+      "max_temp": 100.0,
+      "rpm": 2700,
+      "description": "Very hot temperature"
+    }
+  ]
+}

@@ -20,6 +20,7 @@ class BS2ProGUI:
         self.cpu_monitor = CPUMonitor()
         self.smart_mode_manager = SmartModeManager()
         self.tray_manager = None
+        self.current_rpm = None  # Track current RPM for smart mode
         
         # Set appearance mode and color theme
         ctk.set_appearance_mode("dark")  # "light" or "dark"
