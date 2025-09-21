@@ -27,6 +27,11 @@ class RPMMonitor:
         self.vid = None
         self.pid = None
         
+        # Shared device access
+        self.detect_device_func = None
+        self.open_device_func = None
+        self.close_device_func = None
+        
     def add_callback(self, callback):
         """Add a callback function to be called when RPM changes"""
         self.callbacks.append(callback)
@@ -35,6 +40,12 @@ class RPMMonitor:
         """Remove a callback function"""
         if callback in self.callbacks:
             self.callbacks.remove(callback)
+    
+    def set_shared_device_access(self, detect_func, open_func, close_func):
+        """Set shared device access functions"""
+        self.detect_device_func = detect_func
+        self.open_device_func = open_func
+        self.close_device_func = close_func
     
     def _notify_callbacks(self, rpm):
         """Notify all registered callbacks of RPM change"""
@@ -65,6 +76,18 @@ class RPMMonitor:
     
     def _open_device(self):
         """Open HID device for reading"""
+        # Use shared device access if available
+        if self.open_device_func:
+            logging.info("Using shared device access")
+            self.device = self.open_device_func()
+            if self.device:
+                logging.info("Device opened successfully via shared access")
+                return True
+            else:
+                logging.warning("Shared device access failed")
+                return False
+        
+        # Fallback to direct access
         if self.vid is None or self.pid is None:
             return False
             
@@ -104,7 +127,10 @@ class RPMMonitor:
         """Close HID device"""
         if self.device:
             try:
-                if hasattr(self.device, 'close'):
+                # Use shared device access if available
+                if self.close_device_func:
+                    self.close_device_func(self.device)
+                elif hasattr(self.device, 'close'):
                     self.device.close()
                 self.device = None
             except Exception as e:

@@ -37,8 +37,9 @@ class BS2ProController:
         else:
             logging.warning("HID library not available")
         
-        # Initialize RPM monitor
+        # Initialize RPM monitor with shared device access
         self.rpm_monitor = RPMMonitor()
+        self.rpm_monitor.set_shared_device_access(self.detect_bs2pro, self._open_shared_device, self._close_shared_device)
 
     def detect_bs2pro(self):
         if hid is None:
@@ -125,6 +126,39 @@ class BS2ProController:
                 status_callback(f"⚠️ HID error: {e}", "danger")
             logging.error(f"HID error: {e}")
             return False
+    
+    def _open_shared_device(self):
+        """Open HID device for shared access"""
+        if hid is None:
+            return None
+            
+        try:
+            vid, pid = self.detect_bs2pro()
+            if vid is None or pid is None:
+                return None
+            
+            if hasattr(hid, 'Device'):
+                return hid.Device(vid=vid, pid=pid)
+            elif hasattr(hid, 'device'):
+                dev = hid.device()
+                dev.open(vid, pid)
+                return dev
+            elif hasattr(hid, 'open'):
+                return hid.open(vid, pid)
+            else:
+                return None
+        except Exception as e:
+            logging.error(f"Error opening shared HID device: {e}")
+            return None
+    
+    def _close_shared_device(self, device):
+        """Close shared HID device"""
+        if device:
+            try:
+                if hasattr(device, 'close'):
+                    device.close()
+            except Exception as e:
+                logging.error(f"Error closing shared HID device: {e}")
     
     def start_rpm_monitoring(self, callback=None):
         """Start monitoring RPM data from the device"""
