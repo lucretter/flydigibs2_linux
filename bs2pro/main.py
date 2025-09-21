@@ -3,6 +3,9 @@ import sys
 import logging
 from logging.handlers import RotatingFileHandler
 
+# Add the current directory to Python path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 # Entry point: wire up controller, config, and GUI
 from controller import BS2ProController
 from config import ConfigManager

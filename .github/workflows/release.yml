@@ -67,6 +67,13 @@ jobs:
             --hidden-import=PIL \
             --hidden-import=PIL.Image \
             --hidden-import=PIL.ImageTk \
+            --hidden-import=bs2pro.controller \
+            --hidden-import=bs2pro.config \
+            --hidden-import=bs2pro.gui \
+            --hidden-import=bs2pro.udev_manager \
+            --hidden-import=bs2pro.cpu_monitor \
+            --hidden-import=bs2pro.smart_mode \
+            --hidden-import=bs2pro.tray_manager \
             --collect-all=hidapi \
             --collect-data=hidapi \
             --collect-submodules=hidapi \
