@@ -33,8 +33,13 @@ class BS2ProGUI:
         self.update_device_status()
         self.root.mainloop()
 
-    def on_rpm_select(self, event=None):
-        rpm = int(self.rpm_combobox.get())
+    def on_rpm_select(self, selected_value=None):
+        # CustomTkinter passes the selected value directly
+        if selected_value is None:
+            rpm = int(self.rpm_combobox.get())
+        else:
+            rpm = int(selected_value)
+        
         def status_callback(msg, style):
             self.device_status_label.configure(text=msg, text_color=self.get_color(style))
             self.root.after(2000, self.reset_status_message)
@@ -55,8 +60,13 @@ class BS2ProGUI:
         if not success:
             self.device_status_label.configure(text="Failed to toggle RPM indicator", text_color="#dc3545")
 
-    def on_autostart_select(self, event=None):
-        mode = self.autostart_combobox.get()
+    def on_autostart_select(self, selected_value=None):
+        # CustomTkinter passes the selected value directly
+        if selected_value is None:
+            mode = self.autostart_combobox.get()
+        else:
+            mode = selected_value
+        
         cmd = self.commands[f"autostart_{mode.lower()}"]
         def status_callback(msg, style):
             self.device_status_label.configure(text=msg, text_color=self.get_color(style))
@@ -186,11 +196,11 @@ class BS2ProGUI:
             autostart_frame,
             values=["OFF", "Instant", "Delayed"],
             width=150,
-            height=35
+            height=35,
+            command=self.on_autostart_select
         )
         self.autostart_combobox.set(self.config_manager.load_setting("autostart_mode", "OFF"))
         self.autostart_combobox.pack(anchor="w")
-        self.autostart_combobox.bind("<<ComboboxSelected>>", self.on_autostart_select)
 
         # Toggle switches section
         toggles_frame = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
@@ -251,12 +261,12 @@ class BS2ProGUI:
             rpm_select_frame,
             values=[str(rpm) for rpm in self.rpm_values],
             width=150,
-            height=35
+            height=35,
+            command=self.on_rpm_select
         )
         last_rpm = int(self.config_manager.load_setting("last_rpm", 1900))
         self.rpm_combobox.set(str(last_rpm))
         self.rpm_combobox.pack(anchor="w")
-        self.rpm_combobox.bind("<<ComboboxSelected>>", self.on_rpm_select)
 
         # Current RPM display
         self.rpm_display_label = ctk.CTkLabel(
