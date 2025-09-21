@@ -99,7 +99,7 @@ class BS2ProGUI:
     def on_rpm_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
         if selected_value is None:
-        rpm = int(self.rpm_combobox.get())
+            rpm = int(self.rpm_combobox.get())
         else:
             rpm = int(selected_value)
         
@@ -126,7 +126,7 @@ class BS2ProGUI:
     def on_autostart_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
         if selected_value is None:
-        mode = self.autostart_combobox.get()
+            mode = self.autostart_combobox.get()
         else:
             mode = selected_value
         
