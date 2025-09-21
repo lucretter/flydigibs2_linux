@@ -289,7 +289,9 @@ class RPMMonitor:
     
     def start_monitoring(self, interval=0.1):
         """Start monitoring RPM data"""
+        logging.info(f"start_monitoring called, is_monitoring: {self.is_monitoring}")
         if self.is_monitoring:
+            logging.warning("RPM monitoring is already running")
             return
         
         if not self.detect_bs2pro():

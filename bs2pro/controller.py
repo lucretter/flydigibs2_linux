@@ -129,6 +129,7 @@ class BS2ProController:
     
     def start_rpm_monitoring(self, callback=None):
         """Start monitoring RPM data from the device"""
+        logging.info(f"start_rpm_monitoring called with callback: {callback is not None}")
         if callback:
             self.rpm_monitor.add_callback(callback)
         self.rpm_monitor.start_monitoring()
