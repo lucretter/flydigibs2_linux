@@ -108,6 +108,9 @@ from controller import BS2ProController
 from config import ConfigManager
 from udev_manager import UdevRulesManager
 
+# Apply ttkbootstrap patches before importing GUI
+import ttkbootstrap_patch
+
 # Ensure msgcat stubs are available before importing GUI
 tcl_init.ensure_msgcat_stubs()
 from gui import BS2ProGUI

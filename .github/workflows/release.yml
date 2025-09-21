@@ -75,6 +75,7 @@ jobs:
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
             --hidden-import=tcl_init \
+            --hidden-import=ttkbootstrap_patch \
             --collect-data ttkbootstrap \
             --exclude-module=tkinter.test \
             --exclude-module=test \

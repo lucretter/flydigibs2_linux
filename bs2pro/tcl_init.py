@@ -8,9 +8,16 @@ import tkinter as tk
 
 def setup_tcl_environment():
     """Set up Tcl environment for PyInstaller builds"""
-    # This function will be called when the first Tk instance is created
-    # We'll set up a global Tcl configuration that persists
-    pass
+    # Set up environment variables for proper locale handling
+    import os
+    
+    # Ensure we have proper locale settings
+    if 'LANG' not in os.environ:
+        os.environ['LANG'] = 'en_US.UTF-8'
+    if 'LC_ALL' not in os.environ:
+        os.environ['LC_ALL'] = 'en_US.UTF-8'
+    if 'LC_NUMERIC' not in os.environ:
+        os.environ['LC_NUMERIC'] = 'en_US.UTF-8'
 
 def ensure_msgcat_stubs():
     """Ensure msgcat stubs are available in the current Tcl interpreter"""
@@ -97,8 +104,8 @@ def ensure_msgcat_stubs():
                     return $key
                 }
                 proc mcpreferences {} {
-                    # Return default locale
-                    return [list en]
+                    # Return default locale list
+                    return [list en US]
                 }
                 proc mclocale {{locale ""}} {
                     # Return or set locale
@@ -106,6 +113,14 @@ def ensure_msgcat_stubs():
                         return en
                     }
                     return en
+                }
+                proc mcloadedlocales {} {
+                    # Return loaded locales
+                    return [list en]
+                }
+                proc mcload {dir} {
+                    # Stub for loading message catalogs
+                    return 1
                 }
             }
         ''')
@@ -118,10 +133,14 @@ def ensure_msgcat_stubs():
             root.tk.eval('''
                 namespace eval ::msgcat {
                     proc mcmset {locale dict} { return }
-                    proc mcset {locale key {value ""}} { return $value }
+                    proc mcset {locale key {value ""}} { 
+                        if {$value eq ""} { return $key } else { return $value }
+                    }
                     proc mc {key args} { return $key }
-                    proc mcpreferences {} { return [list en] }
+                    proc mcpreferences {} { return [list en US] }
                     proc mclocale {{locale ""}} { return en }
+                    proc mcloadedlocales {} { return [list en] }
+                    proc mcload {dir} { return 1 }
                 }
             ''')
         except:
