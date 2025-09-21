@@ -12,7 +12,8 @@ except ImportError:
 
 # Import ttkbootstrap with locale fixes
 import ttkbootstrap_fixed as tb
-from ttkbootstrap.constants import *
+# Constants are available directly from ttkbootstrap_fixed
+from ttkbootstrap_fixed import *
 
 class BS2ProGUI:
     def __init__(self, controller, config_manager, rpm_commands, commands, default_settings, icon_path=None):
