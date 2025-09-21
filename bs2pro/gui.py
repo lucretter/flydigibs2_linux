@@ -423,8 +423,27 @@ class BS2ProGUI:
     def auto_adjust_rpm(self, temperature):
         """Automatically adjust RPM based on temperature"""
         try:
+            # Get target RPM and range info
             target_rpm = self.smart_mode_manager.get_rpm_for_temperature(temperature)
             range_info = self.smart_mode_manager.get_range_for_temperature(temperature)
+            
+            # Validate target RPM
+            if target_rpm is None or target_rpm < 1000 or target_rpm > 3000:
+                logging.warning(f"Invalid target RPM: {target_rpm}")
+                self.smart_status_label.configure(
+                    text="Smart Mode: Invalid RPM configuration",
+                    text_color="#dc3545"
+                )
+                return
+            
+            # Check if RPM command exists
+            if target_rpm not in self.rpm_commands:
+                logging.warning(f"RPM command not found for {target_rpm}")
+                self.smart_status_label.configure(
+                    text="Smart Mode: RPM command not available",
+                    text_color="#dc3545"
+                )
+                return
             
             # Only change RPM if it's different from current
             if target_rpm != self.current_rpm:
@@ -448,6 +467,11 @@ class BS2ProGUI:
                             text=f"Smart Mode: {range_info['description']} ({range_info['min_temp']}-{range_info['max_temp']}°C)",
                             text_color="#28a745"
                         )
+                    else:
+                        self.smart_status_label.configure(
+                            text=f"Smart Mode: {target_rpm} RPM (Auto)",
+                            text_color="#28a745"
+                        )
                     
                     # Save setting
                     self.config_manager.save_setting("last_rpm", target_rpm)
@@ -456,6 +480,19 @@ class BS2ProGUI:
                         text="Smart Mode: Failed to adjust RPM",
                         text_color="#dc3545"
                     )
+            else:
+                # RPM is already correct, just update status
+                if range_info:
+                    self.smart_status_label.configure(
+                        text=f"Smart Mode: {range_info['description']} ({range_info['min_temp']}-{range_info['max_temp']}°C)",
+                        text_color="#28a745"
+                    )
+                else:
+                    self.smart_status_label.configure(
+                        text=f"Smart Mode: {target_rpm} RPM (Auto)",
+                        text_color="#28a745"
+                    )
+                    
         except Exception as e:
             logging.error(f"Error in auto RPM adjustment: {e}")
             self.smart_status_label.configure(
@@ -469,14 +506,39 @@ class BS2ProGUI:
         self.smart_mode_manager.set_enabled(enabled)
         
         if enabled:
-            self.smart_status_label.configure(
-                text="Smart Mode: On - Monitoring CPU temperature",
-                text_color="#28a745"
-            )
-            # Get current temperature and adjust if needed
-            current_temp = self.cpu_monitor.get_temperature()
-            if current_temp > 0:
-                self.auto_adjust_rpm(current_temp)
+            try:
+                # Check if we have temperature ranges
+                ranges = self.smart_mode_manager.get_temperature_ranges()
+                if not ranges:
+                    self.smart_status_label.configure(
+                        text="Smart Mode: No temperature ranges configured",
+                        text_color="#ffc107"
+                    )
+                    return
+                
+                # Get current temperature and adjust if needed
+                current_temp = self.cpu_monitor.get_temperature()
+                if current_temp <= 0:
+                    self.smart_status_label.configure(
+                        text="Smart Mode: On - Waiting for temperature data",
+                        text_color="#17a2b8"
+                    )
+                    return
+                
+                self.smart_status_label.configure(
+                    text="Smart Mode: On - Monitoring CPU temperature",
+                    text_color="#28a745"
+                )
+                
+                # Adjust RPM based on current temperature with a small delay
+                self.root.after(100, lambda: self.auto_adjust_rpm(current_temp))
+                
+            except Exception as e:
+                logging.error(f"Error enabling smart mode: {e}")
+                self.smart_status_label.configure(
+                    text="Smart Mode: Error - Check configuration",
+                    text_color="#dc3545"
+                )
         else:
             self.smart_status_label.configure(
                 text="Smart Mode: Off",
