@@ -254,21 +254,24 @@ class RPMMonitor:
                 
                 # Try to read data from the device
                 try:
+                    logging.info("Attempting to read from device...")
                     # Try with timeout first, fallback to without timeout
                     if hasattr(self.device, 'read'):
                         try:
                             data = self.device.read(32, timeout=100)  # 100ms timeout
+                            logging.info(f"Raw data: {data.hex()}")
                         except TypeError:
                             # Some versions don't support timeout parameter
                             data = self.device.read(32)
+                            logging.info(f"Raw data: {data.hex()}")
                     else:
-                        logging.debug("No data received from device")
+                        logging.warning("Device has no read method")
                         time.sleep(interval)
                         continue
                     
                     if data:
-                        # Log raw data for analysis
-                        logging.info(f"Raw data: {data.hex()}")
+                        # Data received, process it
+                        logging.info(f"Data received: {len(data)} bytes")
                         
                         rpm = self._decode_rpm_data(data)
                         if rpm is not None and rpm != self.current_rpm:
