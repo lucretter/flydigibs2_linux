@@ -53,6 +53,12 @@ class BS2ProGUI:
         # Start CPU monitoring
         self.cpu_monitor.start_monitoring()
         
+        # Setup RPM monitoring callbacks
+        self.controller.add_rpm_callback(self.on_rpm_update)
+        
+        # Start RPM monitoring
+        self.controller.start_rpm_monitoring()
+        
         # Center window after widgets are created
         self.root.after(100, self.center_window)
         
@@ -93,10 +99,10 @@ class BS2ProGUI:
             self.device_status_label.configure(text=msg, text_color=self.get_color(style))
             self.root.after(2000, self.reset_status_message)
         success = self.controller.send_command(self.rpm_commands[rpm], status_callback=status_callback)
-        self.rpm_display_label.configure(text=f"Current Speed: {rpm} RPM")
+        # Don't update RPM display here - let live monitoring handle it
         self.config_manager.save_setting("last_rpm", rpm)
         if not success:
-            self.rpm_display_label.configure(text=f"Failed to set RPM: {rpm}")
+            self.device_status_label.configure(text=f"Failed to set RPM: {rpm}", text_color="#dc3545")
 
     def on_rpm_toggle(self):
         state = self.rpm_var.get()
@@ -108,6 +114,15 @@ class BS2ProGUI:
         self.config_manager.save_setting("rpm_indicator", str(state))
         if not success:
             self.device_status_label.configure(text="Failed to toggle RPM indicator", text_color="#dc3545")
+
+    def on_rpm_update(self, rpm):
+        """Callback for real-time RPM updates from the device"""
+        try:
+            # Update the RPM display with real-time data
+            self.rpm_display_label.configure(text=f"Current Speed: {rpm} RPM")
+            logging.info(f"RPM updated from device: {rpm}")
+        except Exception as e:
+            logging.error(f"Error updating RPM display: {e}")
 
     def on_autostart_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
@@ -449,9 +464,9 @@ class BS2ProGUI:
                 success = self.controller.send_command(self.rpm_commands[target_rpm], status_callback=status_callback)
                 
                 if success:
-                    # Update display
+                    # Update combobox selection
                     self.rpm_combobox.set(str(target_rpm))
-                    self.rpm_display_label.configure(text=f"Current Speed: {target_rpm} RPM (Auto)")
+                    # Don't update RPM display here - let live monitoring handle it
                     
                     # Update smart status
                     if range_info:
@@ -912,3 +927,5 @@ class BS2ProGUI:
         """Cleanup resources"""
         if self.cpu_monitor:
             self.cpu_monitor.stop_monitoring()
+        if self.controller:
+            self.controller.stop_rpm_monitoring()

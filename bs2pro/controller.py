@@ -1,5 +1,11 @@
 import logging
 
+# Try relative import first, fallback to absolute
+try:
+    from .rpm_monitor import RPMMonitor
+except ImportError:
+    from rpm_monitor import RPMMonitor
+
 # Try different ways to import hidapi
 try:
     import hid
@@ -18,6 +24,9 @@ class BS2ProController:
             logging.info(f"HID attributes: {[attr for attr in dir(hid) if not attr.startswith('_')]}")
         else:
             logging.warning("HID library not available")
+        
+        # Initialize RPM monitor
+        self.rpm_monitor = RPMMonitor()
 
     def detect_bs2pro(self):
         if hid is None:
@@ -104,3 +113,27 @@ class BS2ProController:
                 status_callback(f"⚠️ HID error: {e}", "danger")
             logging.error(f"HID error: {e}")
             return False
+    
+    def start_rpm_monitoring(self, callback=None):
+        """Start monitoring RPM data from the device"""
+        if callback:
+            self.rpm_monitor.add_callback(callback)
+        self.rpm_monitor.start_monitoring()
+        logging.info("RPM monitoring started")
+    
+    def stop_rpm_monitoring(self):
+        """Stop monitoring RPM data"""
+        self.rpm_monitor.stop_monitoring()
+        logging.info("RPM monitoring stopped")
+    
+    def get_current_rpm(self):
+        """Get the current RPM value"""
+        return self.rpm_monitor.get_current_rpm()
+    
+    def add_rpm_callback(self, callback):
+        """Add a callback for RPM updates"""
+        self.rpm_monitor.add_callback(callback)
+    
+    def remove_rpm_callback(self, callback):
+        """Remove a callback for RPM updates"""
+        self.rpm_monitor.remove_callback(callback)

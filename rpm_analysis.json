@@ -1,0 +1,12 @@
+{
+  "total_samples": 0,
+  "total_rpm_updates": 1,
+  "patterns": {},
+  "rpm_values": [
+    {
+      "timestamp": "2025-09-21T20:24:23.657569",
+      "rpm": 858
+    }
+  ],
+  "data_samples": []
+}

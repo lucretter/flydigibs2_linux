@@ -15,6 +15,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - 🚀 **Auto start-stop Modes** — Choose between OFF, Instant, or Delayed  
 - 🎛️ **RPM Indicator** — Enable/disable RPM feedback  
 - 🧠 **Smart Mode** — Automatic fan control based on CPU temperature  
+- 📊 **Real-time RPM Monitoring** — Live display of actual fan RPM from the device  
 - 🧪 **CLI Support** — Send commands directly via terminal 
 
 ## 📦 Requirements
@@ -116,6 +117,21 @@ Supported CLI commands:
 - `rpm_on`, `rpm_off`
 - `autostart_off`, `autostart_instant`, `autostart_delayed`
 - `startwhenpowered_on`, `startwhenpowered_off`
+
+### Testing RPM Monitoring
+
+To test the RPM monitoring functionality:
+
+```bash
+# Run the RPM monitor test script
+python3 test_rpm_monitor.py
+```
+
+This will:
+- Detect your BS2Pro device
+- Start monitoring for RPM data
+- Display real-time RPM readings
+- Help debug any communication issues
 
 ### Logs and Debugging
 
