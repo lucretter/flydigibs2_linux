@@ -11,7 +11,13 @@ except ImportError:
 
 class BS2ProController:
     def __init__(self):
-        pass
+        # Log hidapi information for debugging
+        if hid is not None:
+            logging.info(f"HID library loaded: {hid.__file__ if hasattr(hid, '__file__') else 'unknown location'}")
+            logging.info(f"HID version: {hid.__version__ if hasattr(hid, '__version__') else 'unknown'}")
+            logging.info(f"HID attributes: {[attr for attr in dir(hid) if not attr.startswith('_')]}")
+        else:
+            logging.warning("HID library not available")
 
     def detect_bs2pro(self):
         if hid is None:
@@ -43,18 +49,29 @@ class BS2ProController:
                 logging.error("BS2PRO device not found.")
                 return False
             
-            # Check if hid has Device attribute
-            if not hasattr(hid, 'Device'):
+            # Try different hidapi APIs based on version
+            if hasattr(hid, 'Device'):
+                # New hidapi API (0.14+)
+                dev = hid.Device(vid=vid, pid=pid)
+                payload = bytes.fromhex(hex_cmd)
+                dev.write(payload)
+                dev.read(32, timeout=1000)
+                dev.close()
+            elif hasattr(hid, 'open'):
+                # Old hidapi API (0.13 and earlier)
+                dev = hid.open(vid, pid)
+                if dev is None:
+                    raise Exception("Failed to open HID device")
+                payload = bytes.fromhex(hex_cmd)
+                dev.write(payload)
+                dev.read(32, timeout=1000)
+                dev.close()
+            else:
                 if status_callback:
-                    status_callback("❌ HID Device not available", "danger")
-                logging.error("HID Device not available - hidapi version issue")
+                    status_callback("❌ Unsupported hidapi version", "danger")
+                logging.error("Unsupported hidapi version - no Device or open method")
                 return False
                 
-            dev = hid.Device(vid=vid, pid=pid)
-            payload = bytes.fromhex(hex_cmd)
-            dev.write(payload)
-            dev.read(32, timeout=1000)
-            dev.close()
             if status_callback:
                 status_callback("✅ Command sent successfully", "success")
             logging.info(f"Command sent: {hex_cmd}")

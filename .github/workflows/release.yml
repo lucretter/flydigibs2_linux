@@ -33,7 +33,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller hidapi==0.14.0
+          pip install pyinstaller hidapi
 
       - name: Create desktop file
         run: |
@@ -61,8 +61,10 @@ jobs:
             --add-data 'bs2pro/icon.png:.' \
             --hidden-import=hidapi \
             --hidden-import=hid \
+            --hidden-import=hidapi.hidapi \
             --collect-all=hidapi \
-            --collect-data=hidapi"
+            --collect-data=hidapi \
+            --collect-submodules=hidapi"
           
           # Add HID library binaries if they exist
           if [ -f "/usr/lib/x86_64-linux-gnu/libhidapi-hidraw.so.0" ]; then
