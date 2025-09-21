@@ -5,13 +5,15 @@ Smart Mode Configuration and Management
 import logging
 import json
 import os
+import sys
 
 class SmartModeManager:
     def __init__(self, config_file=None):
         if config_file is None:
-            # Use smart_mode.json in the same directory as this script
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            self.config_file = os.path.join(script_dir, "smart_mode.json")
+            # Use the same config directory as the main application
+            config_dir = os.path.join(os.path.expanduser("~"), ".config", "bs2pro_controller")
+            os.makedirs(config_dir, exist_ok=True)
+            self.config_file = os.path.join(config_dir, "smart_mode.json")
         else:
             self.config_file = config_file
         self.temperature_ranges = []
