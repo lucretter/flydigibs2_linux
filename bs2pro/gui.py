@@ -2,6 +2,8 @@ import customtkinter as ctk
 import os
 import sys
 import logging
+import tkinter as tk
+from tkinter import messagebox
 from cpu_monitor import CPUMonitor
 from smart_mode import SmartModeManager
 from tray_manager import TrayManager
@@ -647,19 +649,47 @@ class BS2ProGUI:
             # Clear existing ranges
             self.smart_mode_manager.temperature_ranges = []
             
-            # Add ranges from widgets
-            for widget in self.range_widgets:
+            # Collect data from widgets before destroying dialog
+            ranges_data = []
+            for i, widget in enumerate(self.range_widgets):
                 try:
                     min_temp = float(widget['min_entry'].get())
                     max_temp = float(widget['max_entry'].get())
                     rpm = int(widget['rpm_entry'].get())
                     description = widget['desc_entry'].get()
                     
-                    self.smart_mode_manager.add_temperature_range(
-                        min_temp, max_temp, rpm, description
-                    )
-                except ValueError:
-                    continue
+                    # Validate range
+                    if min_temp >= max_temp:
+                        messagebox.showerror("Error", f"Range {i+1}: Min temperature must be less than max temperature")
+                        return
+                    
+                    if rpm < 1000 or rpm > 3000:
+                        messagebox.showerror("Error", f"Range {i+1}: RPM must be between 1000 and 3000")
+                        return
+                    
+                    ranges_data.append({
+                        'min_temp': min_temp,
+                        'max_temp': max_temp,
+                        'rpm': rpm,
+                        'description': description
+                    })
+                except ValueError as ve:
+                    messagebox.showerror("Error", f"Range {i+1}: Invalid value - {ve}")
+                    return
+            
+            # Check if we have any valid ranges
+            if not ranges_data:
+                messagebox.showerror("Error", "No valid temperature ranges found. Please add at least one range.")
+                return
+            
+            # Add ranges to smart mode manager
+            for range_data in ranges_data:
+                self.smart_mode_manager.add_temperature_range(
+                    range_data['min_temp'],
+                    range_data['max_temp'],
+                    range_data['rpm'],
+                    range_data['description']
+                )
             
             # Save configuration
             self.smart_mode_manager.save_config()
