@@ -38,19 +38,21 @@ class TrayManager:
             
             # Create menu items
             menu = self.pystray.Menu(
-                self.pystray.MenuItem("Show BS2PRO Controller", self.show_window),
+                self.pystray.MenuItem("Show Window", self.show_window),
                 self.pystray.MenuItem("Toggle Smart Mode", self.toggle_smart_mode),
                 self.pystray.MenuItem("Exit", self.quit_app)
             )
             
-            # Create tray icon with click handler
+            # Create tray icon
             self.tray_icon = self.pystray.Icon(
                 "bs2pro_controller",
                 icon_image,
                 "BS2PRO Controller",
-                menu,
-                default_action=self.show_window  # Left-click action
+                menu
             )
+            
+            # Set default action for left-click
+            self.tray_icon.default_action = self.show_window
             
             return True
         except Exception as e:
@@ -65,19 +67,24 @@ class TrayManager:
             if os.path.exists(icon_path):
                 logging.info(f"Loading app icon from: {icon_path}")
                 icon = self.Image.open(icon_path)
-                # Resize to standard tray icon size (16x16 or 32x32)
-                icon = icon.resize((32, 32), self.Image.Resampling.LANCZOS)
+                # Convert to RGBA if needed
+                if icon.mode != 'RGBA':
+                    icon = icon.convert('RGBA')
+                # Resize to standard tray icon size
+                icon = icon.resize((32, 32), self.Image.LANCZOS)
+                logging.info(f"Icon loaded successfully: {icon.size}, mode: {icon.mode}")
                 return icon
         except Exception as e:
             logging.warning(f"Could not load app icon: {e}")
         
         # Create a simple colored square as fallback
         logging.info("Creating fallback icon")
-        return self.Image.new('RGB', (32, 32), color='blue')
+        fallback = self.Image.new('RGBA', (32, 32), color=(0, 0, 255, 255))  # Blue with alpha
+        return fallback
     
     def show_window(self, icon=None, item=None):
         """Show the main window"""
-        logging.info("Show window requested from tray")
+        logging.info(f"Show window requested from tray - icon: {icon}, item: {item}")
         self.root.after(0, self._show_window)
     
     def _show_window(self):
@@ -111,10 +118,12 @@ class TrayManager:
     
     def toggle_smart_mode(self, icon=None, item=None):
         """Toggle smart mode from tray menu"""
+        logging.info(f"Toggle smart mode requested from tray - icon: {icon}, item: {item}")
         self.root.after(0, self._toggle_smart_mode)
     
     def _toggle_smart_mode(self):
         """Toggle smart mode (called from main thread)"""
+        logging.info("Toggling smart mode from tray")
         if hasattr(self.gui, 'toggle_smart_mode'):
             self.gui.toggle_smart_mode()
     
@@ -150,7 +159,14 @@ class TrayManager:
         try:
             # Run tray icon in a separate thread
             import threading
-            tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
+            def run_tray():
+                try:
+                    logging.info("Starting tray icon thread")
+                    self.tray_icon.run()
+                except Exception as e:
+                    logging.error(f"Error in tray thread: {e}")
+            
+            tray_thread = threading.Thread(target=run_tray, daemon=True)
             tray_thread.start()
             logging.info("System tray icon started successfully")
             return True

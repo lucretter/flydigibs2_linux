@@ -54,8 +54,6 @@ class BS2ProGUI:
         
         if tray_started:
             logging.info("System tray initialized successfully")
-            # Show a brief message about the new behavior
-            self.root.after(2000, self.show_tray_info)
         else:
             logging.warning("System tray not available - app will close normally instead of minimizing to tray")
         
@@ -76,7 +74,7 @@ class BS2ProGUI:
         self.root.bind("<Control-Q>", lambda e: self.force_exit())
         
         self.root.mainloop()
-    
+
     def center_window(self):
         """Center the window on the screen"""
         self.root.update_idletasks()
@@ -101,7 +99,7 @@ class BS2ProGUI:
     def on_rpm_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
         if selected_value is None:
-            rpm = int(self.rpm_combobox.get())
+        rpm = int(self.rpm_combobox.get())
         else:
             rpm = int(selected_value)
         
@@ -128,7 +126,7 @@ class BS2ProGUI:
     def on_autostart_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
         if selected_value is None:
-            mode = self.autostart_combobox.get()
+        mode = self.autostart_combobox.get()
         else:
             mode = selected_value
         
@@ -890,21 +888,6 @@ class BS2ProGUI:
         """Force exit the application (called from tray menu)"""
         self.cleanup()
         self.root.destroy()
-    
-    def show_tray_info(self):
-        """Show information about tray behavior"""
-        try:
-            from tkinter import messagebox
-            messagebox.showinfo(
-                "System Tray Active", 
-                "BS2PRO Controller is now running in the system tray!\n\n"
-                "• Click X to minimize to tray\n"
-                "• Right-click tray icon for menu\n"
-                "• Use Ctrl+Q to force exit\n"
-                "• Click tray icon to show window"
-            )
-        except Exception as e:
-            logging.warning(f"Could not show tray info: {e}")
     
     def cleanup(self):
         """Cleanup resources"""
