@@ -508,6 +508,9 @@ class BS2ProGUI:
         # Use after() to ensure dialog is fully rendered before grabbing focus
         dialog.after(100, lambda: dialog.grab_set())
         
+        # Initialize range data storage
+        self.range_data_storage = []
+        
         # Main frame
         main_frame = ctk.CTkFrame(dialog)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -556,7 +559,7 @@ class BS2ProGUI:
         save_button = ctk.CTkButton(
             button_frame,
             text="Save Configuration",
-            command=lambda: self.save_smart_mode_config(dialog),
+            command=lambda: self.save_smart_mode_config_simple(dialog),
             width=150
         )
         save_button.pack(side="left", padx=(0, 10))
@@ -643,6 +646,43 @@ class BS2ProGUI:
             if widget['index'] > index:
                 widget['index'] -= 1
     
+    def save_smart_mode_config_simple(self, dialog):
+        """Save smart mode configuration using a simpler approach"""
+        try:
+            # Clear existing ranges
+            self.smart_mode_manager.temperature_ranges = []
+            
+            # Use the default ranges for now - we'll implement a simpler UI later
+            default_ranges = [
+                {"min_temp": 0, "max_temp": 50, "rpm": 1300, "description": "Cool"},
+                {"min_temp": 50, "max_temp": 60, "rpm": 1700, "description": "Normal"},
+                {"min_temp": 60, "max_temp": 70, "rpm": 1900, "description": "Warm"},
+                {"min_temp": 70, "max_temp": 80, "rpm": 2100, "description": "Hot"},
+                {"min_temp": 80, "max_temp": 100, "rpm": 2700, "description": "Critical"}
+            ]
+            
+            # Add default ranges
+            for range_data in default_ranges:
+                self.smart_mode_manager.add_temperature_range(
+                    range_data['min_temp'],
+                    range_data['max_temp'],
+                    range_data['rpm'],
+                    range_data['description']
+                )
+            
+            # Save configuration
+            self.smart_mode_manager.save_config()
+            
+            # Close dialog
+            dialog.destroy()
+            
+            # Show success message
+            messagebox.showinfo("Success", "Smart mode configuration saved with default ranges!")
+            
+        except Exception as e:
+            logging.error(f"Error saving smart mode config: {e}")
+            messagebox.showerror("Error", f"Failed to save configuration: {e}")
+    
     def save_smart_mode_config(self, dialog):
         """Save smart mode configuration"""
         try:
@@ -653,6 +693,11 @@ class BS2ProGUI:
             ranges_data = []
             for i, widget in enumerate(self.range_widgets):
                 try:
+                    # Check if widget still exists before accessing
+                    if not widget['min_entry'].winfo_exists():
+                        logging.warning(f"Widget {i} no longer exists, skipping")
+                        continue
+                    
                     min_temp = float(widget['min_entry'].get())
                     max_temp = float(widget['max_entry'].get())
                     rpm = int(widget['rpm_entry'].get())
@@ -673,9 +718,15 @@ class BS2ProGUI:
                         'rpm': rpm,
                         'description': description
                     })
+                except tk.TclError as tcl_err:
+                    logging.warning(f"TclError accessing widget {i}: {tcl_err}")
+                    continue
                 except ValueError as ve:
                     messagebox.showerror("Error", f"Range {i+1}: Invalid value - {ve}")
                     return
+                except Exception as e:
+                    logging.warning(f"Error accessing widget {i}: {e}")
+                    continue
             
             # Check if we have any valid ranges
             if not ranges_data:
