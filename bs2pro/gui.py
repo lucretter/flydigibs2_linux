@@ -652,17 +652,59 @@ class BS2ProGUI:
             # Clear existing ranges
             self.smart_mode_manager.temperature_ranges = []
             
-            # Use the default ranges for now - we'll implement a simpler UI later
-            default_ranges = [
-                {"min_temp": 0, "max_temp": 50, "rpm": 1300, "description": "Cool"},
-                {"min_temp": 50, "max_temp": 60, "rpm": 1700, "description": "Normal"},
-                {"min_temp": 60, "max_temp": 70, "rpm": 1900, "description": "Warm"},
-                {"min_temp": 70, "max_temp": 80, "rpm": 2100, "description": "Hot"},
-                {"min_temp": 80, "max_temp": 100, "rpm": 2700, "description": "Critical"}
-            ]
+            # Try to collect data from widgets first
+            ranges_data = []
+            for i, widget in enumerate(self.range_widgets):
+                try:
+                    # Use a more robust method to get values
+                    min_temp_str = widget['min_entry']._entry.get()
+                    max_temp_str = widget['max_entry']._entry.get()
+                    rpm_str = widget['rpm_entry']._entry.get()
+                    description = widget['desc_entry']._entry.get()
+                    
+                    # Convert to numbers
+                    min_temp = float(min_temp_str) if min_temp_str else 0
+                    max_temp = float(max_temp_str) if max_temp_str else 50
+                    rpm = int(rpm_str) if rpm_str else 1300
+                    
+                    # Validate range
+                    if min_temp >= max_temp:
+                        messagebox.showerror("Error", f"Range {i+1}: Min temperature must be less than max temperature")
+                        return
+                    
+                    if rpm < 1000 or rpm > 3000:
+                        messagebox.showerror("Error", f"Range {i+1}: RPM must be between 1000 and 3000")
+                        return
+                    
+                    ranges_data.append({
+                        'min_temp': min_temp,
+                        'max_temp': max_temp,
+                        'rpm': rpm,
+                        'description': description if description else f"Range {i+1}"
+                    })
+                    
+                except (ValueError, AttributeError) as e:
+                    logging.warning(f"Error reading widget {i}: {e}")
+                    # Skip invalid widgets
+                    continue
             
-            # Add default ranges
-            for range_data in default_ranges:
+            # If no valid ranges found, use defaults
+            if not ranges_data:
+                logging.info("No valid custom ranges found, using defaults")
+                default_ranges = [
+                    {"min_temp": 0, "max_temp": 50, "rpm": 1300, "description": "Cool"},
+                    {"min_temp": 50, "max_temp": 60, "rpm": 1700, "description": "Normal"},
+                    {"min_temp": 60, "max_temp": 70, "rpm": 1900, "description": "Warm"},
+                    {"min_temp": 70, "max_temp": 80, "rpm": 2100, "description": "Hot"},
+                    {"min_temp": 80, "max_temp": 100, "rpm": 2700, "description": "Critical"}
+                ]
+                ranges_data = default_ranges
+                message_text = "Smart mode configuration saved with default ranges!"
+            else:
+                message_text = f"Smart mode configuration saved with {len(ranges_data)} custom ranges!"
+            
+            # Add ranges to smart mode manager
+            for range_data in ranges_data:
                 self.smart_mode_manager.add_temperature_range(
                     range_data['min_temp'],
                     range_data['max_temp'],
@@ -677,7 +719,7 @@ class BS2ProGUI:
             dialog.destroy()
             
             # Show success message
-            messagebox.showinfo("Success", "Smart mode configuration saved with default ranges!")
+            messagebox.showinfo("Success", message_text)
             
         except Exception as e:
             logging.error(f"Error saving smart mode config: {e}")

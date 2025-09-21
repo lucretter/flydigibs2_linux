@@ -1,0 +1,35 @@
+{
+  "enabled": false,
+  "temperature_ranges": [
+    {
+      "min_temp": 0,
+      "max_temp": 50,
+      "rpm": 1300,
+      "description": "Cool"
+    },
+    {
+      "min_temp": 50,
+      "max_temp": 60,
+      "rpm": 1700,
+      "description": "Normal"
+    },
+    {
+      "min_temp": 60,
+      "max_temp": 70,
+      "rpm": 1900,
+      "description": "Warm"
+    },
+    {
+      "min_temp": 70,
+      "max_temp": 80,
+      "rpm": 2100,
+      "description": "Hot"
+    },
+    {
+      "min_temp": 80,
+      "max_temp": 100,
+      "rpm": 2700,
+      "description": "Critical"
+    }
+  ]
+}
