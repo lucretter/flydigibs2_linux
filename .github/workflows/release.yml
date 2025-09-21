@@ -58,15 +58,16 @@ jobs:
 
       - name: Build binary
         run: |
-          pyinstaller --noconfirm --onefile --name bs2pro_controller bs2pro/main.py \
+          pyinstaller --noconfirm --onefile --name bs2pro_controller \
             --hidden-import=PIL._tkinter_finder \
             --hidden-import=hid \
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
             --collect-all hid \
-            --collect-data tk \
-            --collect-data tcl \
-            --add-data "bs2pro/icon.png:."
+            --add-data "bs2pro/icon.png:." \
+            --add-data "/usr/share/tcltk/tcllib1.20/msgcat:tcllib/msgcat" \
+            bs2pro/main.py
+
 
       - name: Build .deb with dependencies
         run: |
