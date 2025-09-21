@@ -21,13 +21,6 @@ class BS2ProGUI:
         self.commands = commands
         self.default_settings = default_settings
         self.root = tb.Window(themename="darkly")
-        msgcat_path = os.path.join(
-            getattr(sys, '_MEIPASS', os.path.dirname(__file__)),
-            'tcl',
-            'msgcat.tcl'
-        )
-        if os.path.exists(msgcat_path):
-            self.root.tk.eval(f'source "{msgcat_path}"')
         self.root.title("BS2PRO Controller")
         self.root.geometry("450x450")
         self.root.resizable(True, True)

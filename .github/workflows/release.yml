@@ -61,8 +61,9 @@ jobs:
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
             --collect-data ttkbootstrap \
+            --exclude-module=tkinter.test \
+            --exclude-module=test \
             --add-data "bs2pro/icon.png:." \
-            --add-data "bs2pro/tcl/msgcat1.7.1:tcl/msgcat1.7.1" \
             bs2pro/main.py
 
       - name: Build .deb with dependencies
