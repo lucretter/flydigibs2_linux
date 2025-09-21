@@ -73,11 +73,18 @@ jobs:
             --hidden-import=customtkinter \
             --hidden-import=rpm_monitor \
             --hidden-import=bs2pro.rpm_monitor \
+            --hidden-import=bs2pro.controller \
+            --hidden-import=bs2pro.gui \
+            --hidden-import=bs2pro.config \
+            --hidden-import=bs2pro.udev_manager \
+            --hidden-import=bs2pro.cpu_monitor \
+            --hidden-import=bs2pro.smart_mode \
             --collect-all=hidapi \
             --collect-data=hidapi \
             --collect-submodules=hidapi \
             --collect-all=customtkinter \
-            --collect-data=customtkinter"
+            --collect-data=customtkinter \
+            --collect-all=bs2pro"
           
           # Add HID library binaries if they exist
           if [ -f "/usr/lib/x86_64-linux-gnu/libhidapi-hidraw.so.0" ]; then

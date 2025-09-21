@@ -9,18 +9,18 @@ sys.path.insert(0, current_dir)
 
 # Entry point: wire up controller, config, and GUI
 try:
-    # Try relative imports first (for development)
-    from controller import BS2ProController
-    from config import ConfigManager
-    from gui import BS2ProGUI
-    from udev_manager import UdevRulesManager
+    # Try absolute imports first (for packaging)
+    from bs2pro.controller import BS2ProController
+    from bs2pro.config import ConfigManager
+    from bs2pro.gui import BS2ProGUI
+    from bs2pro.udev_manager import UdevRulesManager
 except ImportError:
-    # Fallback for PyInstaller - try absolute imports
+    # Fallback for development - try relative imports
     try:
-        from bs2pro.controller import BS2ProController
-        from bs2pro.config import ConfigManager
-        from bs2pro.gui import BS2ProGUI
-        from bs2pro.udev_manager import UdevRulesManager
+        from controller import BS2ProController
+        from config import ConfigManager
+        from gui import BS2ProGUI
+        from udev_manager import UdevRulesManager
     except ImportError:
         # Last resort - try importing from the same directory
         import importlib.util

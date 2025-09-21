@@ -3,11 +3,20 @@ import logging
 # Import RPM monitor with fallback for packaging
 try:
     from .rpm_monitor import RPMMonitor
-except ImportError:
+    logging.info("RPM monitor imported via relative import")
+except ImportError as e:
+    logging.info(f"Relative import failed: {e}")
     try:
         from rpm_monitor import RPMMonitor
-    except ImportError:
-        from bs2pro.rpm_monitor import RPMMonitor
+        logging.info("RPM monitor imported via direct import")
+    except ImportError as e:
+        logging.info(f"Direct import failed: {e}")
+        try:
+            from bs2pro.rpm_monitor import RPMMonitor
+            logging.info("RPM monitor imported via absolute import")
+        except ImportError as e:
+            logging.error(f"All RPM monitor imports failed: {e}")
+            raise
 
 # Try different ways to import hidapi
 try:
