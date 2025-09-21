@@ -258,12 +258,18 @@ class RPMMonitor:
                     # Try with timeout first, fallback to without timeout
                     if hasattr(self.device, 'read'):
                         try:
-                            data = self.device.read(32, timeout=100)  # 100ms timeout
-                            logging.info(f"Raw data: {data.hex()}")
+                            data = self.device.read(32, timeout=1000)  # 1000ms timeout
+                            if data:
+                                logging.info(f"Raw data: {data.hex()}")
+                            else:
+                                logging.debug("No data received (timeout)")
                         except TypeError:
                             # Some versions don't support timeout parameter
                             data = self.device.read(32)
-                            logging.info(f"Raw data: {data.hex()}")
+                            if data:
+                                logging.info(f"Raw data: {data.hex()}")
+                            else:
+                                logging.debug("No data received (no timeout)")
                     else:
                         logging.warning("Device has no read method")
                         time.sleep(interval)
@@ -278,6 +284,22 @@ class RPMMonitor:
                             self.current_rpm = rpm
                             self._notify_callbacks(rpm)
                             logging.info(f"RPM updated: {rpm}")
+                    else:
+                        # No data received, try alternative approach
+                        logging.debug("No data received, trying alternative read method...")
+                        try:
+                            # Try reading without timeout
+                            if hasattr(self.device, 'read'):
+                                data = self.device.read(32)
+                                if data:
+                                    logging.info(f"Raw data (no timeout): {data.hex()}")
+                                    rpm = self._decode_rpm_data(data)
+                                    if rpm is not None and rpm != self.current_rpm:
+                                        self.current_rpm = rpm
+                                        self._notify_callbacks(rpm)
+                                        logging.info(f"RPM updated: {rpm}")
+                        except Exception as e:
+                            logging.debug(f"Alternative read also failed: {e}")
                     
                 except Exception as e:
                     logging.debug(f"Error reading from device: {e}")
