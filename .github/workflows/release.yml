@@ -56,16 +56,18 @@ jobs:
           StartupNotify=false
           EOF
 
+      - name: Find tcllib msgcat path
+        id: find_tcl
+        run: echo "tcl_path=$(find /usr/share/tcltk -type d -name "msgcat" | head -n 1)" >> $GITHUB_ENV
+
       - name: Build binary
         run: |
           pyinstaller --noconfirm --onefile --name bs2pro_controller \
             --hidden-import=PIL._tkinter_finder \
-            --hidden-import=hid \
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
-            --collect-all hid \
             --add-data "bs2pro/icon.png:." \
-            --add-data "/usr/share/tcltk/tcllib1.20/msgcat:tcllib/msgcat" \
+            --add-data "${{ env.tcl_path }}:tcllib/msgcat" \
             bs2pro/main.py
 
 
