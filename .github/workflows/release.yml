@@ -33,7 +33,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller Pillow tk hid ttkbootstrap
+          pip install pyinstaller Pillow ttkbootstrap hidapi
 
       - name: Create desktop file
         run: |
@@ -56,23 +56,14 @@ jobs:
           StartupNotify=false
           EOF
 
-      - name: Find tcllib msgcat path
-        run: |
-          MSG_PATH=$(find /usr/share -type d -name "msgcat" | head -n 1)
-          if [ -z "$MSG_PATH" ]; then
-            echo "::error::Could not find the tcl 'msgcat' directory. Build cannot continue."
-            exit 1
-          fi
-          echo "TCL_MSGCAT_PATH=$MSG_PATH" >> $GITHUB_ENV
-
       - name: Build binary
         run: |
           pyinstaller --noconfirm --onefile --name bs2pro_controller \
             --hidden-import=PIL._tkinter_finder \
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
+            --collect-data ttkbootstrap \
             --add-data "bs2pro/icon.png:." \
-            --add-data "${{ env.TCL_MSGCAT_PATH }}:tcl/msgs" \
             bs2pro/main.py
 
 
@@ -95,7 +86,7 @@ jobs:
         run: |
           # Create .rpm with proper dependencies
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
-            -d "hidapi" -d "tcl" \
+            -d "hidapi" \
             -d "python3-tkinter" \
             --description "Controller for BS2PRO devices" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
