@@ -18,20 +18,37 @@ class BS2ProGUI:
         # Create main window
         self.root = ctk.CTk()
         self.root.title("BS2PRO Controller")
-        self.root.geometry("500x600")
+        
+        # Set minimum size and auto-detect optimal size
+        self.root.minsize(500, 650)
+        self.root.geometry("550x700")
         self.root.resizable(True, True)
+        
+        # Center the window on screen
+        self.center_window()
         
         # Set window icon if provided
         if icon_path and os.path.exists(icon_path):
             try:
-                self.icon = ctk.CTkImage(light_image=icon_path, dark_image=icon_path, size=(32, 32))
-                self.root.iconbitmap(icon_path)
+                # Use standard tkinter method for icon (works better with taskbar)
+                import tkinter as tk
+                icon = tk.PhotoImage(file=icon_path)
+                self.root.iconphoto(True, icon)
             except Exception as e:
                 logging.warning(f"Could not load icon: {e}")
         
         self.setup_widgets()
         self.update_device_status()
         self.root.mainloop()
+    
+    def center_window(self):
+        """Center the window on the screen"""
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def on_rpm_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
@@ -107,9 +124,9 @@ class BS2ProGUI:
         return color_map.get(style, "#ffffff")
 
     def setup_widgets(self):
-        # Main container
+        # Main container with better spacing
         self.main_frame = ctk.CTkFrame(self.root)
-        self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        self.main_frame.pack(fill="both", expand=True, padx=25, pady=25)
         
         # Header section
         self.create_header()
@@ -129,7 +146,7 @@ class BS2ProGUI:
     def create_header(self):
         """Create modern header with title"""
         header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 20))
+        header_frame.pack(fill="x", pady=(0, 25))
         
         # Title
         title_label = ctk.CTkLabel(
@@ -138,20 +155,11 @@ class BS2ProGUI:
             font=ctk.CTkFont(size=24, weight="bold")
         )
         title_label.pack(anchor="w")
-        
-        # Subtitle
-        subtitle_label = ctk.CTkLabel(
-            header_frame,
-            text="Advanced Gamepad Configuration",
-            font=ctk.CTkFont(size=12),
-            text_color="gray"
-        )
-        subtitle_label.pack(anchor="w", pady=(5, 0))
 
     def create_device_status(self):
         """Create device status section"""
         status_frame = ctk.CTkFrame(self.main_frame)
-        status_frame.pack(fill="x", pady=(0, 20))
+        status_frame.pack(fill="x", pady=(0, 25))
         
         # Status label
         self.device_status_label = ctk.CTkLabel(
@@ -165,7 +173,7 @@ class BS2ProGUI:
     def create_controls_section(self):
         """Create controls section"""
         self.controls_frame = ctk.CTkFrame(self.main_frame)
-        self.controls_frame.pack(fill="x", pady=(0, 20))
+        self.controls_frame.pack(fill="x", pady=(0, 25))
         
         # Section title
         title_label = ctk.CTkLabel(
@@ -229,7 +237,7 @@ class BS2ProGUI:
     def create_fan_speed_section(self):
         """Create fan speed section"""
         self.rpm_frame = ctk.CTkFrame(self.main_frame)
-        self.rpm_frame.pack(fill="x", pady=(0, 20))
+        self.rpm_frame.pack(fill="x", pady=(0, 25))
         
         # Section title
         title_label = ctk.CTkLabel(
