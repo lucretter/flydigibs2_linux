@@ -128,7 +128,11 @@ class TrayManager:
         try:
             if self.tray_icon:
                 self.tray_icon.stop()
-            self.root.quit()
+            # Use the GUI's force_exit method to properly clean up
+            if hasattr(self.gui, 'force_exit'):
+                self.gui.force_exit()
+            else:
+                self.root.quit()
             logging.info("App quit from tray")
         except Exception as e:
             logging.error(f"Error quitting app: {e}")

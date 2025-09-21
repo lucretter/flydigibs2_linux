@@ -54,6 +54,8 @@ class BS2ProGUI:
         
         if tray_started:
             logging.info("System tray initialized successfully")
+            # Show a brief message about the new behavior
+            self.root.after(2000, self.show_tray_info)
         else:
             logging.warning("System tray not available - app will close normally instead of minimizing to tray")
         
@@ -68,7 +70,10 @@ class BS2ProGUI:
         
         # Handle window close and minimize events
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.root.bind("<Unmap>", self.on_minimize)  # Handle minimize button
+        
+        # Add keyboard shortcut for force exit (Ctrl+Q)
+        self.root.bind("<Control-q>", lambda e: self.force_exit())
+        self.root.bind("<Control-Q>", lambda e: self.force_exit())
         
         self.root.mainloop()
     
@@ -871,17 +876,35 @@ class BS2ProGUI:
         self.smart_mode_var.set(not self.smart_mode_var.get())
         self.on_smart_mode_toggle()
     
-    def on_minimize(self, event):
-        """Handle window minimize event"""
-        if self.tray_manager and self.tray_manager.is_tray_working():
-            # Hide to system tray when minimized
-            self.tray_manager.hide_window()
-    
     def on_closing(self):
         """Handle window closing event (X button)"""
-        # Always close the app when X is clicked
+        if self.tray_manager and self.tray_manager.is_tray_working():
+            # Hide to system tray instead of closing
+            self.tray_manager.hide_window()
+        else:
+            # Close normally if tray not available
+            self.cleanup()
+            self.root.destroy()
+    
+    def force_exit(self):
+        """Force exit the application (called from tray menu)"""
         self.cleanup()
         self.root.destroy()
+    
+    def show_tray_info(self):
+        """Show information about tray behavior"""
+        try:
+            from tkinter import messagebox
+            messagebox.showinfo(
+                "System Tray Active", 
+                "BS2PRO Controller is now running in the system tray!\n\n"
+                "• Click X to minimize to tray\n"
+                "• Right-click tray icon for menu\n"
+                "• Use Ctrl+Q to force exit\n"
+                "• Click tray icon to show window"
+            )
+        except Exception as e:
+            logging.warning(f"Could not show tray info: {e}")
     
     def cleanup(self):
         """Cleanup resources"""
