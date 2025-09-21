@@ -1,10 +1,13 @@
 import logging
 
-# Try relative import first, fallback to absolute
+# Import RPM monitor with fallback for packaging
 try:
     from .rpm_monitor import RPMMonitor
 except ImportError:
-    from rpm_monitor import RPMMonitor
+    try:
+        from rpm_monitor import RPMMonitor
+    except ImportError:
+        from bs2pro.rpm_monitor import RPMMonitor
 
 # Try different ways to import hidapi
 try:

@@ -71,6 +71,8 @@ jobs:
             --hidden-import=hid \
             --hidden-import=hidapi.hidapi \
             --hidden-import=customtkinter \
+            --hidden-import=rpm_monitor \
+            --hidden-import=bs2pro.rpm_monitor \
             --collect-all=hidapi \
             --collect-data=hidapi \
             --collect-submodules=hidapi \
