@@ -51,11 +51,8 @@ class TrayManager:
                 menu
             )
             
-            # Set default action for left-click (this should work)
+            # Set default action for left-click
             self.tray_icon.default_action = self.show_window
-            
-            # Add click handler for debugging
-            self.tray_icon._on_click = self._on_tray_click
             
             return True
         except Exception as e:
@@ -85,15 +82,10 @@ class TrayManager:
         fallback = self.Image.new('RGBA', (32, 32), color=(0, 0, 255, 255))  # Blue with alpha
         return fallback
     
-    def _on_tray_click(self, icon, item):
-        """Handle tray icon clicks for debugging"""
-        logging.info(f"Tray icon clicked - icon: {icon}, item: {item}")
-        if item is None:  # Left click
-            self.show_window(icon, item)
-    
     def show_window(self, icon=None, item=None):
         """Show the main window"""
         logging.info(f"Show window requested from tray - icon: {icon}, item: {item}")
+        print(f"DEBUG: Show window called with icon={icon}, item={item}")
         self.root.after(0, self._show_window)
     
     def _show_window(self):
@@ -128,6 +120,7 @@ class TrayManager:
     def toggle_smart_mode(self, icon=None, item=None):
         """Toggle smart mode from tray menu"""
         logging.info(f"Toggle smart mode requested from tray - icon: {icon}, item: {item}")
+        print(f"DEBUG: Toggle smart mode called with icon={icon}, item={item}")
         self.root.after(0, self._toggle_smart_mode)
     
     def _toggle_smart_mode(self):
@@ -139,6 +132,7 @@ class TrayManager:
     def quit_app(self, icon=None, item=None):
         """Quit the application"""
         logging.info("Quit app requested from tray")
+        print(f"DEBUG: Quit app called with icon={icon}, item={item}")
         self.root.after(0, self._quit_app)
     
     def _quit_app(self):
@@ -171,7 +165,7 @@ class TrayManager:
             def run_tray():
                 try:
                     logging.info("Starting tray icon thread")
-                    # Start the tray icon
+                    # Start the tray icon - this will block until stopped
                     self.tray_icon.run()
                 except Exception as e:
                     logging.error(f"Error in tray thread: {e}")
@@ -181,7 +175,7 @@ class TrayManager:
             
             # Give it a moment to start
             import time
-            time.sleep(0.5)
+            time.sleep(1.0)
             
             logging.info("System tray icon started successfully")
             return True
