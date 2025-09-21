@@ -7,8 +7,13 @@ import json
 import os
 
 class SmartModeManager:
-    def __init__(self, config_file="smart_mode.json"):
-        self.config_file = config_file
+    def __init__(self, config_file=None):
+        if config_file is None:
+            # Use smart_mode.json in the same directory as this script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            self.config_file = os.path.join(script_dir, "smart_mode.json")
+        else:
+            self.config_file = config_file
         self.temperature_ranges = []
         self.is_enabled = False
         self.current_rpm = None
