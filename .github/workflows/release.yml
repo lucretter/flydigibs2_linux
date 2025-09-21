@@ -33,7 +33,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller hidapi
+          pip install pyinstaller hidapi==0.14.0
 
       - name: Create desktop file
         run: |
@@ -56,10 +56,28 @@ jobs:
 
       - name: Build binary
         run: |
-          pyinstaller --onefile --name bs2pro_controller \
-            --add-data "bs2pro/icon.png:." \
+          # Build PyInstaller command with conditional binary inclusion
+          PYINSTALLER_CMD="pyinstaller --onefile --name bs2pro_controller \
+            --add-data 'bs2pro/icon.png:.' \
             --hidden-import=hidapi \
-            bs2pro/main.py
+            --hidden-import=hid \
+            --collect-all=hidapi \
+            --collect-data=hidapi"
+          
+          # Add HID library binaries if they exist
+          if [ -f "/usr/lib/x86_64-linux-gnu/libhidapi-hidraw.so.0" ]; then
+            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-binary '/usr/lib/x86_64-linux-gnu/libhidapi-hidraw.so.0:.'"
+          fi
+          
+          if [ -f "/usr/lib/x86_64-linux-gnu/libhidapi-libusb.so.0" ]; then
+            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-binary '/usr/lib/x86_64-linux-gnu/libhidapi-libusb.so.0:.'"
+          fi
+          
+          # Add the main script and execute
+          PYINSTALLER_CMD="$PYINSTALLER_CMD bs2pro/main.py"
+          
+          echo "Running: $PYINSTALLER_CMD"
+          eval $PYINSTALLER_CMD
 
       - name: Build .deb with dependencies
         run: |
