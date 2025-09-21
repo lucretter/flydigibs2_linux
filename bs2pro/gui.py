@@ -2,6 +2,14 @@ import tkinter as tk
 import os
 import sys
 import logging
+
+# Ensure msgcat is available before importing ttkbootstrap
+try:
+    import tcl_init
+    tcl_init.ensure_msgcat_stubs()
+except ImportError:
+    pass  # tcl_init not available, continue anyway
+
 import ttkbootstrap as tb 
 from ttkbootstrap.constants import *
 

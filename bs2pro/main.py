@@ -106,8 +106,11 @@ initialize_msgcat()
 # Entry point: wire up controller, config, and GUI
 from controller import BS2ProController
 from config import ConfigManager
-from gui import BS2ProGUI
 from udev_manager import UdevRulesManager
+
+# Ensure msgcat stubs are available before importing GUI
+tcl_init.ensure_msgcat_stubs()
+from gui import BS2ProGUI
 
 ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
 
