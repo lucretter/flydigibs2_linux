@@ -59,6 +59,13 @@ jobs:
           # Build PyInstaller command with conditional binary inclusion
           PYINSTALLER_CMD="pyinstaller --onefile --name bs2pro_controller \
             --add-data 'bs2pro/icon.png:.' \
+            --add-data 'bs2pro/controller.py:.' \
+            --add-data 'bs2pro/config.py:.' \
+            --add-data 'bs2pro/gui.py:.' \
+            --add-data 'bs2pro/udev_manager.py:.' \
+            --add-data 'bs2pro/cpu_monitor.py:.' \
+            --add-data 'bs2pro/smart_mode.py:.' \
+            --add-data 'bs2pro/tray_manager.py:.' \
             --hidden-import=hidapi \
             --hidden-import=hid \
             --hidden-import=hidapi.hidapi \
@@ -67,13 +74,6 @@ jobs:
             --hidden-import=PIL \
             --hidden-import=PIL.Image \
             --hidden-import=PIL.ImageTk \
-            --hidden-import=bs2pro.controller \
-            --hidden-import=bs2pro.config \
-            --hidden-import=bs2pro.gui \
-            --hidden-import=bs2pro.udev_manager \
-            --hidden-import=bs2pro.cpu_monitor \
-            --hidden-import=bs2pro.smart_mode \
-            --hidden-import=bs2pro.tray_manager \
             --collect-all=hidapi \
             --collect-data=hidapi \
             --collect-submodules=hidapi \

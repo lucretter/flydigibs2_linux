@@ -4,13 +4,42 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 # Add the current directory to Python path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
 # Entry point: wire up controller, config, and GUI
-from controller import BS2ProController
-from config import ConfigManager
-from gui import BS2ProGUI
-from udev_manager import UdevRulesManager
+try:
+    # Try relative imports first (for development)
+    from controller import BS2ProController
+    from config import ConfigManager
+    from gui import BS2ProGUI
+    from udev_manager import UdevRulesManager
+except ImportError:
+    # Fallback for PyInstaller - try absolute imports
+    try:
+        from bs2pro.controller import BS2ProController
+        from bs2pro.config import ConfigManager
+        from bs2pro.gui import BS2ProGUI
+        from bs2pro.udev_manager import UdevRulesManager
+    except ImportError:
+        # Last resort - try importing from the same directory
+        import importlib.util
+        
+        def load_module_from_file(module_name, file_path):
+            spec = importlib.util.spec_from_file_location(module_name, file_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+        
+        controller_module = load_module_from_file('controller', os.path.join(current_dir, 'controller.py'))
+        config_module = load_module_from_file('config', os.path.join(current_dir, 'config.py'))
+        gui_module = load_module_from_file('gui', os.path.join(current_dir, 'gui.py'))
+        udev_module = load_module_from_file('udev_manager', os.path.join(current_dir, 'udev_manager.py'))
+        
+        BS2ProController = controller_module.BS2ProController
+        ConfigManager = config_module.ConfigManager
+        BS2ProGUI = gui_module.BS2ProGUI
+        UdevRulesManager = udev_module.UdevRulesManager
 
 ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
 
