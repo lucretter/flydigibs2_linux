@@ -1,258 +1,126 @@
 #!/usr/bin/env python3
 """
-System Tray Manager for BS2PRO Controller
+Tray Manager for BS2PRO Controller
+Uses native Linux system tray without pystray dependency
 """
-import customtkinter as ctk
-import tkinter as tk
-from tkinter import messagebox
 import logging
 import os
+import subprocess
+import time
+import threading
 
 class TrayManager:
     def __init__(self, root, gui_instance):
         self.root = root
         self.gui = gui_instance
-        self.tray_icon = None
         self.is_minimized = False
+        self.tray_available = False
+        self.notification_available = False
         
-        # Try to import pystray for system tray functionality
-        try:
-            import pystray
-            from PIL import Image
-            self.pystray = pystray
-            self.Image = Image
-            self.tray_available = True
-            logging.info("System tray dependencies loaded successfully")
-        except ImportError as e:
-            self.tray_available = False
-            logging.warning(f"pystray not available - system tray functionality disabled: {e}")
+        # Check for native system tray support
+        self._check_tray_support()
         
-        # Fallback to simple tray manager
-        self.simple_tray = None
-        if not self.tray_available:
-            try:
-                from simple_tray_manager import SimpleTrayManager
-                self.simple_tray = SimpleTrayManager(root, gui_instance)
-                logging.info("Fallback to simple tray manager")
-            except ImportError as e:
-                logging.warning(f"Could not load simple tray manager: {e}")
+        # Check for notification support
+        self._check_notification_support()
+        
+        logging.info(f"Tray manager initialized - tray: {self.tray_available}, notifications: {self.notification_available}")
     
-    def create_tray_icon(self):
-        """Create system tray icon"""
-        if not self.tray_available:
-            return False
-        
-        try:
-            # Create a simple icon (you can replace this with your app icon)
-            icon_image = self._create_icon_image()
-            
-            # Create menu items with proper callback handling
-            menu = self.pystray.Menu(
-                self.pystray.MenuItem("Show Window", self.show_window, default=True),
-                self.pystray.MenuItem("Toggle Smart Mode", self.toggle_smart_mode),
-                self.pystray.MenuItem("Exit", self.quit_app)
-            )
-            
-            # Create tray icon with proper setup
-            self.tray_icon = self.pystray.Icon(
-                "bs2pro_controller",
-                icon_image,
-                "BS2PRO Controller",
-                menu
-            )
-            
-            # Set default action for left-click
-            self.tray_icon.default_action = self.show_window
-            
-            # Try to set up click handlers manually
-            try:
-                # Override the click handler
-                original_on_click = getattr(self.tray_icon, '_on_click', None)
-                if original_on_click:
-                    def enhanced_click(icon, item):
-                        logging.info(f"Tray icon clicked - icon: {icon}, item: {item}")
-                        print(f"DEBUG: Tray clicked with item: {item}")
-                        if item is None:  # Left click
-                            self.show_window(icon, item)
-                        else:
-                            original_on_click(icon, item)
-                    self.tray_icon._on_click = enhanced_click
-            except Exception as e:
-                logging.warning(f"Could not set up enhanced click handler: {e}")
-            
-            return True
-        except Exception as e:
-            logging.error(f"Error creating tray icon: {e}")
-            return False
+    def _check_tray_support(self):
+        """Check if we can use native system tray"""
+        # We can always minimize to taskbar, so this is always available
+        self.tray_available = True
     
-    def _create_icon_image(self):
-        """Create a simple icon image"""
+    def _check_notification_support(self):
+        """Check if we can send system notifications"""
         try:
-            # Try to load the app icon
-            icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
-            if os.path.exists(icon_path):
-                logging.info(f"Loading app icon from: {icon_path}")
-                icon = self.Image.open(icon_path)
-                # Convert to RGBA if needed
-                if icon.mode != 'RGBA':
-                    icon = icon.convert('RGBA')
-                # Resize to standard tray icon size
-                icon = icon.resize((32, 32), self.Image.LANCZOS)
-                logging.info(f"Icon loaded successfully: {icon.size}, mode: {icon.mode}")
-                return icon
+            subprocess.run(['notify-send', '--version'], 
+                         capture_output=True, check=True, timeout=5)
+            self.notification_available = True
+            logging.info("System notifications available")
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            self.notification_available = False
+            logging.warning("System notifications not available")
+    
+    def start_tray(self):
+        """Start the tray functionality"""
+        self.tray_available = True
+        logging.info("Tray manager started")
+        return True
+    
+    def hide_window(self):
+        """Hide the main window to taskbar"""
+        try:
+            # Minimize to taskbar
+            self.root.iconify()
+            self.is_minimized = True
+            logging.info("Window minimized to taskbar")
+            
+            # Send notification about how to restore
+            if self.notification_available:
+                self._send_notification(
+                    "BS2PRO Controller",
+                    "App minimized to taskbar. Click the taskbar icon to restore.",
+                    timeout=5000
+                )
+            else:
+                logging.info("No notification system available - user should check taskbar")
+                
         except Exception as e:
-            logging.warning(f"Could not load app icon: {e}")
-        
-        # Create a simple colored square as fallback
-        logging.info("Creating fallback icon")
-        fallback = self.Image.new('RGBA', (32, 32), color=(0, 0, 255, 255))  # Blue with alpha
-        return fallback
+            logging.error(f"Error hiding window: {e}")
     
     def show_window(self, icon=None, item=None):
         """Show the main window"""
-        logging.info(f"Show window requested from tray - icon: {icon}, item: {item}")
-        print(f"DEBUG: Show window called with icon={icon}, item={item}")
-        self.root.after(0, self._show_window)
-    
-    def _show_window(self):
-        """Show window (called from main thread)"""
         try:
             self.root.deiconify()
             self.root.lift()
             self.root.focus_force()
             self.is_minimized = False
-            logging.info("Window shown from tray")
+            logging.info("Window restored from taskbar")
         except Exception as e:
             logging.error(f"Error showing window: {e}")
     
-    def hide_window(self):
-        """Hide the main window to system tray"""
-        if self.simple_tray and not self.tray_available:
-            # Use simple tray
-            self.simple_tray.hide_window()
-        elif self.tray_available and self.tray_icon:
-            try:
-                self.root.withdraw()
-                self.is_minimized = True
-                logging.info("Window hidden to system tray")
-            except Exception as e:
-                logging.error(f"Error hiding window to tray: {e}")
-                # Fallback: minimize to taskbar
-                self.root.iconify()
-                self.is_minimized = True
-        else:
-            # Fallback: minimize to taskbar
-            self.root.iconify()
-            self.is_minimized = True
-            logging.warning("System tray not available - minimizing to taskbar instead")
+    def _send_notification(self, title, message, timeout=3000):
+        """Send a system notification"""
+        if not self.notification_available:
+            return
+        
+        try:
+            subprocess.run([
+                'notify-send',
+                '--app-name=BS2PRO Controller',
+                f'--expire-time={timeout}',
+                '--icon=applications-system',
+                title,
+                message
+            ], timeout=5)
+        except Exception as e:
+            logging.warning(f"Could not send notification: {e}")
+    
+    def update_tray_tooltip(self, text):
+        """Update tooltip (not applicable for native tray)"""
+        pass
+    
+    def is_window_minimized(self):
+        """Check if window is minimized"""
+        return self.is_minimized
+    
+    def is_tray_working(self):
+        """Check if tray functionality is working"""
+        return self.tray_available
+    
+    def stop_tray(self):
+        """Stop the tray functionality"""
+        self.tray_available = False
+        logging.info("Tray manager stopped")
     
     def toggle_smart_mode(self, icon=None, item=None):
-        """Toggle smart mode from tray menu"""
-        logging.info(f"Toggle smart mode requested from tray - icon: {icon}, item: {item}")
-        print(f"DEBUG: Toggle smart mode called with icon={icon}, item={item}")
-        self.root.after(0, self._toggle_smart_mode)
-    
-    def _toggle_smart_mode(self):
-        """Toggle smart mode (called from main thread)"""
-        logging.info("Toggling smart mode from tray")
+        """Toggle smart mode"""
         if hasattr(self.gui, 'toggle_smart_mode'):
             self.gui.toggle_smart_mode()
     
     def quit_app(self, icon=None, item=None):
         """Quit the application"""
-        logging.info("Quit app requested from tray")
-        print(f"DEBUG: Quit app called with icon={icon}, item={item}")
-        self.root.after(0, self._quit_app)
-    
-    def _quit_app(self):
-        """Quit app (called from main thread)"""
-        try:
-            if self.tray_icon:
-                self.tray_icon.stop()
-            # Use the GUI's force_exit method to properly clean up
-            if hasattr(self.gui, 'force_exit'):
-                self.gui.force_exit()
-            else:
-                self.root.quit()
-            logging.info("App quit from tray")
-        except Exception as e:
-            logging.error(f"Error quitting app: {e}")
-    
-    def start_tray(self):
-        """Start the system tray icon"""
-        # If pystray is not available, use simple tray
-        if not self.tray_available:
-            if self.simple_tray:
-                return self.simple_tray.start_tray()
-            else:
-                logging.warning("No tray functionality available")
-                return False
-        
-        # Try pystray first
-        if not self.create_tray_icon():
-            logging.error("Failed to create tray icon")
-            # Fallback to simple tray
-            if self.simple_tray:
-                logging.info("Falling back to simple tray manager")
-                return self.simple_tray.start_tray()
-            return False
-            
-        try:
-            # Try running the tray icon in a different way
-            import threading
-            import time
-            
-            def run_tray():
-                try:
-                    logging.info("Starting tray icon thread")
-                    # Use run_detached if available, otherwise use run
-                    if hasattr(self.tray_icon, 'run_detached'):
-                        logging.info("Using run_detached method")
-                        self.tray_icon.run_detached()
-                    else:
-                        logging.info("Using run method")
-                        self.tray_icon.run()
-                except Exception as e:
-                    logging.error(f"Error in tray thread: {e}")
-                    # If pystray fails, try simple tray
-                    if self.simple_tray:
-                        logging.info("pystray failed, falling back to simple tray")
-                        self.simple_tray.start_tray()
-            
-            # Start the tray thread
-            tray_thread = threading.Thread(target=run_tray, daemon=True)
-            tray_thread.start()
-            
-            # Give it time to start
-            time.sleep(1.0)
-            
-            logging.info("System tray icon started successfully")
-            return True
-                
-        except Exception as e:
-            logging.error(f"Error starting tray icon: {e}")
-            # Fallback to simple tray
-            if self.simple_tray:
-                logging.info("Falling back to simple tray manager due to error")
-                return self.simple_tray.start_tray()
-            return False
-    
-    def stop_tray(self):
-        """Stop the system tray icon"""
-        if self.tray_icon:
-            self.tray_icon.stop()
-    
-    def update_tray_tooltip(self, text):
-        """Update the tray icon tooltip"""
-        if self.tray_icon:
-            self.tray_icon.title = text
-    
-    def is_window_minimized(self):
-        """Check if window is minimized to tray"""
-        return self.is_minimized
-    
-    def is_tray_working(self):
-        """Check if system tray is working properly"""
-        if self.simple_tray and not self.tray_available:
-            return self.simple_tray.is_tray_working()
-        return self.tray_available and self.tray_icon is not None
+        if hasattr(self.gui, 'force_exit'):
+            self.gui.force_exit()
+        else:
+            self.root.quit()
