@@ -2,12 +2,15 @@ import tkinter as tk
 import os
 import sys
 
-# Locate msgcat.tcl inside PyInstaller bundle or source tree
+# Locate bundled msgcat.tcl
 base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
 msgcat_path = os.path.join(base_path, 'tcl', 'msgcat.tcl')
 
+# Manually source msgcat.tcl to define ::msgcat namespace
 if os.path.exists(msgcat_path):
-    tk.Tk().tk.eval(f'source "{msgcat_path}"')
+    # Create a temporary Tcl interpreter just to source msgcat.tcl
+    interp = tk.Tcl()
+    interp.eval(f'source "{msgcat_path}"')
 import ttkbootstrap as tb 
 from ttkbootstrap.constants import *
 import logging
