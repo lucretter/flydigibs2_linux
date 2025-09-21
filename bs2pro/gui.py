@@ -546,14 +546,15 @@ class BS2ProGUI:
         """Create smart mode configuration dialog"""
         dialog = ctk.CTkToplevel(self.root)
         dialog.title("Smart Mode Configuration")
-        dialog.geometry("600x500")
+        dialog.geometry("700x600")
+        dialog.minsize(650, 550)  # Set minimum size
         dialog.transient(self.root)
         
         # Center the dialog
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (600 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (500 // 2)
-        dialog.geometry(f"600x500+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (700 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (600 // 2)
+        dialog.geometry(f"700x600+{x}+{y}")
         
         # Make sure dialog is visible before grabbing focus
         dialog.lift()
@@ -561,6 +562,9 @@ class BS2ProGUI:
         
         # Use after() to ensure dialog is fully rendered before grabbing focus
         dialog.after(100, lambda: dialog.grab_set())
+        
+        # Auto-adjust size after content is loaded
+        dialog.after(200, lambda: self.auto_adjust_dialog_size(dialog))
         
         # Initialize range data storage
         self.range_data_storage = []
@@ -587,7 +591,7 @@ class BS2ProGUI:
         instructions.pack(pady=(0, 20))
         
         # Temperature ranges list
-        ranges_frame = ctk.CTkScrollableFrame(main_frame, height=250)
+        ranges_frame = ctk.CTkScrollableFrame(main_frame, height=300)
         ranges_frame.pack(fill="both", expand=True, pady=(0, 20))
         
         # Load current ranges
@@ -682,6 +686,41 @@ class BS2ProGUI:
         }
         self.range_widgets.append(widget_data)
     
+    def auto_adjust_dialog_size(self, dialog):
+        """Automatically adjust dialog size based on content"""
+        try:
+            # Update the dialog to get accurate size requirements
+            dialog.update_idletasks()
+            
+            # Get the required size
+            req_width = dialog.winfo_reqwidth()
+            req_height = dialog.winfo_reqheight()
+            
+            # Add some padding
+            padding = 50
+            new_width = max(700, req_width + padding)
+            new_height = max(600, req_height + padding)
+            
+            # Get screen dimensions
+            screen_width = dialog.winfo_screenwidth()
+            screen_height = dialog.winfo_screenheight()
+            
+            # Ensure dialog doesn't exceed screen size
+            new_width = min(new_width, screen_width - 100)
+            new_height = min(new_height, screen_height - 100)
+            
+            # Center the dialog with new size
+            x = (screen_width - new_width) // 2
+            y = (screen_height - new_height) // 2
+            
+            # Apply new geometry
+            dialog.geometry(f"{new_width}x{new_height}+{x}+{y}")
+            
+            logging.info(f"Dialog auto-adjusted to {new_width}x{new_height}")
+            
+        except Exception as e:
+            logging.warning(f"Could not auto-adjust dialog size: {e}")
+    
     def add_new_range(self, parent):
         """Add a new temperature range"""
         new_range = {
@@ -691,6 +730,10 @@ class BS2ProGUI:
             'description': 'New range'
         }
         self.create_range_widget(parent, len(self.range_widgets), new_range)
+        
+        # Auto-adjust dialog size after adding new range
+        dialog = parent.winfo_toplevel()
+        dialog.after(100, lambda: self.auto_adjust_dialog_size(dialog))
     
     def remove_range_widget(self, parent, widget_frame, index):
         """Remove a temperature range widget"""
@@ -699,6 +742,10 @@ class BS2ProGUI:
         for widget in self.range_widgets:
             if widget['index'] > index:
                 widget['index'] -= 1
+        
+        # Auto-adjust dialog size after removing range
+        dialog = parent.winfo_toplevel()
+        dialog.after(100, lambda: self.auto_adjust_dialog_size(dialog))
     
     def save_smart_mode_config_simple(self, dialog):
         """Save smart mode configuration using a simpler approach"""
