@@ -55,7 +55,12 @@ class BS2ProController:
                 dev = hid.Device(vid=vid, pid=pid)
                 payload = bytes.fromhex(hex_cmd)
                 dev.write(payload)
-                dev.read(32, timeout=1000)
+                # Try with timeout first, fallback to without timeout
+                try:
+                    dev.read(32, timeout=1000)
+                except TypeError:
+                    # Some versions don't support timeout parameter
+                    dev.read(32)
                 dev.close()
             elif hasattr(hid, 'device'):
                 # hidapi 0.14.0.post4 API (lowercase device)
@@ -63,7 +68,12 @@ class BS2ProController:
                 dev.open(vid, pid)
                 payload = bytes.fromhex(hex_cmd)
                 dev.write(payload)
-                dev.read(32, timeout=1000)
+                # Try with timeout first, fallback to without timeout
+                try:
+                    dev.read(32, timeout=1000)
+                except TypeError:
+                    # Some versions don't support timeout parameter
+                    dev.read(32)
                 dev.close()
             elif hasattr(hid, 'open'):
                 # Old hidapi API (0.13 and earlier)
@@ -72,7 +82,12 @@ class BS2ProController:
                     raise Exception("Failed to open HID device")
                 payload = bytes.fromhex(hex_cmd)
                 dev.write(payload)
-                dev.read(32, timeout=1000)
+                # Try with timeout first, fallback to without timeout
+                try:
+                    dev.read(32, timeout=1000)
+                except TypeError:
+                    # Some versions don't support timeout parameter
+                    dev.read(32)
                 dev.close()
             else:
                 if status_callback:
