@@ -2,12 +2,118 @@ import os
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
+import tkinter as tk
+
+def initialize_msgcat():
+    """Initialize msgcat commands before any ttkbootstrap imports"""
+    try:
+        # Create a temporary root to initialize Tcl interpreter
+        temp_root = tk.Tk()
+        temp_root.withdraw()  # Hide the window
+        
+        # Set up Tcl library paths for packaged executable
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            base_path = sys._MEIPASS
+            tcl_path = os.path.join(base_path, 'tcl8.6')
+            tk_path = os.path.join(base_path, 'tk8.6')
+            
+            # Add Tcl/Tk library paths
+            temp_root.tk.eval(f'set auto_path [linsert $auto_path 0 "{tcl_path}" "{tk_path}"]')
+            
+            # Try to load msgcat from the included files
+            msgcat_path = os.path.join(base_path, 'tcl', 'msgcat1.7.1')
+            if os.path.exists(msgcat_path):
+                temp_root.tk.eval(f'source [file join "{msgcat_path}" "msgcat.tcl"]')
+                logging.info("Loaded msgcat from packaged files")
+            else:
+                # Fallback to system msgcat
+                try:
+                    temp_root.tk.eval('package require msgcat')
+                    logging.info("Loaded system msgcat")
+                except tk.TclError:
+                    raise tk.TclError("msgcat not available")
+        else:
+            # Running as script, try to load system msgcat
+            try:
+                temp_root.tk.eval('package require msgcat')
+                logging.info("Loaded system msgcat")
+            except tk.TclError:
+                raise tk.TclError("msgcat not available")
+        
+        # Test if msgcat is working
+        try:
+            temp_root.tk.call('::msgcat::mcmset', 'en', {})
+            logging.info("msgcat initialized successfully")
+        except tk.TclError as e:
+            logging.warning(f"msgcat test failed: {e}")
+            # Create stub implementations as fallback
+            temp_root.tk.eval('''
+                namespace eval ::msgcat {
+                    proc mcmset {locale dict} {
+                        # Stub implementation
+                        return
+                    }
+                    proc mcset {locale key {value ""}} {
+                        # Stub implementation
+                        return $value
+                    }
+                    proc mc {key args} {
+                        # Stub implementation - just return the key
+                        return $key
+                    }
+                    proc mcpreferences {} {
+                        # Return default locale
+                        return [list en]
+                    }
+                    proc mclocale {{locale ""}} {
+                        # Return or set locale
+                        if {$locale eq ""} {
+                            return en
+                        }
+                        return en
+                    }
+                }
+            ''')
+            logging.info("Created msgcat stub implementations")
+        
+        temp_root.destroy()
+        
+    except Exception as e:
+        logging.warning(f"Failed to initialize msgcat: {e}")
+        # Create a minimal fallback
+        try:
+            temp_root = tk.Tk()
+            temp_root.withdraw()
+            temp_root.tk.eval('''
+                namespace eval ::msgcat {
+                    proc mcmset {locale dict} { return }
+                    proc mcset {locale key {value ""}} { return $value }
+                    proc mc {key args} { return $key }
+                    proc mcpreferences {} { return [list en] }
+                    proc mclocale {{locale ""}} { return en }
+                }
+            ''')
+            temp_root.destroy()
+            logging.info("Created minimal msgcat fallback")
+        except:
+            pass
+
+# Initialize Tcl environment BEFORE any other imports that might use ttkbootstrap
+import tcl_init  # This sets up the Tcl environment
+initialize_msgcat()
 
 # Entry point: wire up controller, config, and GUI
 from controller import BS2ProController
 from config import ConfigManager
-from gui_simple import BS2ProGUI  # Use the simple GUI
 from udev_manager import UdevRulesManager
+
+# Apply ttkbootstrap patches before importing GUI
+import ttkbootstrap_patch
+
+# Ensure msgcat stubs are available before importing GUI
+tcl_init.ensure_msgcat_stubs()
+from gui import BS2ProGUI
 
 ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
 
