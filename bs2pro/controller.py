@@ -57,6 +57,14 @@ class BS2ProController:
                 dev.write(payload)
                 dev.read(32, timeout=1000)
                 dev.close()
+            elif hasattr(hid, 'device'):
+                # hidapi 0.14.0.post4 API (lowercase device)
+                dev = hid.device()
+                dev.open(vid, pid)
+                payload = bytes.fromhex(hex_cmd)
+                dev.write(payload)
+                dev.read(32, timeout=1000)
+                dev.close()
             elif hasattr(hid, 'open'):
                 # Old hidapi API (0.13 and earlier)
                 dev = hid.open(vid, pid)
@@ -69,7 +77,7 @@ class BS2ProController:
             else:
                 if status_callback:
                     status_callback("❌ Unsupported hidapi version", "danger")
-                logging.error("Unsupported hidapi version - no Device or open method")
+                logging.error("Unsupported hidapi version - no Device, device, or open method")
                 return False
                 
             if status_callback:
