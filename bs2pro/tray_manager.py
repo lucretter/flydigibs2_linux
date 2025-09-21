@@ -36,14 +36,14 @@ class TrayManager:
             # Create a simple icon (you can replace this with your app icon)
             icon_image = self._create_icon_image()
             
-            # Create menu items
+            # Create menu items with proper callback handling
             menu = self.pystray.Menu(
-                self.pystray.MenuItem("Show Window", self.show_window),
+                self.pystray.MenuItem("Show Window", self.show_window, default=True),
                 self.pystray.MenuItem("Toggle Smart Mode", self.toggle_smart_mode),
                 self.pystray.MenuItem("Exit", self.quit_app)
             )
             
-            # Create tray icon
+            # Create tray icon with proper setup
             self.tray_icon = self.pystray.Icon(
                 "bs2pro_controller",
                 icon_image,
@@ -51,8 +51,11 @@ class TrayManager:
                 menu
             )
             
-            # Set default action for left-click
+            # Set default action for left-click (this should work)
             self.tray_icon.default_action = self.show_window
+            
+            # Add click handler for debugging
+            self.tray_icon._on_click = self._on_tray_click
             
             return True
         except Exception as e:
@@ -81,6 +84,12 @@ class TrayManager:
         logging.info("Creating fallback icon")
         fallback = self.Image.new('RGBA', (32, 32), color=(0, 0, 255, 255))  # Blue with alpha
         return fallback
+    
+    def _on_tray_click(self, icon, item):
+        """Handle tray icon clicks for debugging"""
+        logging.info(f"Tray icon clicked - icon: {icon}, item: {item}")
+        if item is None:  # Left click
+            self.show_window(icon, item)
     
     def show_window(self, icon=None, item=None):
         """Show the main window"""
@@ -162,12 +171,18 @@ class TrayManager:
             def run_tray():
                 try:
                     logging.info("Starting tray icon thread")
+                    # Start the tray icon
                     self.tray_icon.run()
                 except Exception as e:
                     logging.error(f"Error in tray thread: {e}")
             
             tray_thread = threading.Thread(target=run_tray, daemon=True)
             tray_thread.start()
+            
+            # Give it a moment to start
+            import time
+            time.sleep(0.5)
+            
             logging.info("System tray icon started successfully")
             return True
         except Exception as e:
