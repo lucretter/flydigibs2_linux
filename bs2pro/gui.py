@@ -66,8 +66,9 @@ class BS2ProGUI:
         # Center window after widgets are created
         self.root.after(100, self.center_window)
         
-        # Handle window close event
+        # Handle window close and minimize events
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.root.bind("<Unmap>", self.on_minimize)  # Handle minimize button
         
         self.root.mainloop()
     
@@ -870,15 +871,17 @@ class BS2ProGUI:
         self.smart_mode_var.set(not self.smart_mode_var.get())
         self.on_smart_mode_toggle()
     
-    def on_closing(self):
-        """Handle window closing event"""
+    def on_minimize(self, event):
+        """Handle window minimize event"""
         if self.tray_manager and self.tray_manager.is_tray_working():
-            # Hide to system tray instead of closing
+            # Hide to system tray when minimized
             self.tray_manager.hide_window()
-        else:
-            # Close normally
-            self.cleanup()
-            self.root.destroy()
+    
+    def on_closing(self):
+        """Handle window closing event (X button)"""
+        # Always close the app when X is clicked
+        self.cleanup()
+        self.root.destroy()
     
     def cleanup(self):
         """Cleanup resources"""

@@ -39,16 +39,17 @@ class TrayManager:
             # Create menu items
             menu = self.pystray.Menu(
                 self.pystray.MenuItem("Show BS2PRO Controller", self.show_window),
-                self.pystray.MenuItem("Smart Mode", self.toggle_smart_mode),
+                self.pystray.MenuItem("Toggle Smart Mode", self.toggle_smart_mode),
                 self.pystray.MenuItem("Exit", self.quit_app)
             )
             
-            # Create tray icon
+            # Create tray icon with click handler
             self.tray_icon = self.pystray.Icon(
                 "bs2pro_controller",
                 icon_image,
                 "BS2PRO Controller",
-                menu
+                menu,
+                default_action=self.show_window  # Left-click action
             )
             
             return True
@@ -63,24 +64,32 @@ class TrayManager:
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
             if os.path.exists(icon_path):
                 logging.info(f"Loading app icon from: {icon_path}")
-                return self.Image.open(icon_path)
+                icon = self.Image.open(icon_path)
+                # Resize to standard tray icon size (16x16 or 32x32)
+                icon = icon.resize((32, 32), self.Image.Resampling.LANCZOS)
+                return icon
         except Exception as e:
             logging.warning(f"Could not load app icon: {e}")
         
         # Create a simple colored square as fallback
         logging.info("Creating fallback icon")
-        return self.Image.new('RGB', (64, 64), color='blue')
+        return self.Image.new('RGB', (32, 32), color='blue')
     
     def show_window(self, icon=None, item=None):
         """Show the main window"""
+        logging.info("Show window requested from tray")
         self.root.after(0, self._show_window)
     
     def _show_window(self):
         """Show window (called from main thread)"""
-        self.root.deiconify()
-        self.root.lift()
-        self.root.focus_force()
-        self.is_minimized = False
+        try:
+            self.root.deiconify()
+            self.root.lift()
+            self.root.focus_force()
+            self.is_minimized = False
+            logging.info("Window shown from tray")
+        except Exception as e:
+            logging.error(f"Error showing window: {e}")
     
     def hide_window(self):
         """Hide the main window to system tray"""
@@ -111,13 +120,18 @@ class TrayManager:
     
     def quit_app(self, icon=None, item=None):
         """Quit the application"""
+        logging.info("Quit app requested from tray")
         self.root.after(0, self._quit_app)
     
     def _quit_app(self):
         """Quit app (called from main thread)"""
-        if self.tray_icon:
-            self.tray_icon.stop()
-        self.root.quit()
+        try:
+            if self.tray_icon:
+                self.tray_icon.stop()
+            self.root.quit()
+            logging.info("App quit from tray")
+        except Exception as e:
+            logging.error(f"Error quitting app: {e}")
     
     def start_tray(self):
         """Start the system tray icon"""
