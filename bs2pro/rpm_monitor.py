@@ -27,10 +27,6 @@ class RPMMonitor:
         self.vid = None
         self.pid = None
         
-        # Shared device access
-        self.detect_device_func = None
-        self.open_device_func = None
-        self.close_device_func = None
         
     def add_callback(self, callback):
         """Add a callback function to be called when RPM changes"""
@@ -41,11 +37,6 @@ class RPMMonitor:
         if callback in self.callbacks:
             self.callbacks.remove(callback)
     
-    def set_shared_device_access(self, detect_func, open_func, close_func):
-        """Set shared device access functions"""
-        self.detect_device_func = detect_func
-        self.open_device_func = open_func
-        self.close_device_func = close_func
     
     def _notify_callbacks(self, rpm):
         """Notify all registered callbacks of RPM change"""
@@ -76,18 +67,6 @@ class RPMMonitor:
     
     def _open_device(self):
         """Open HID device for reading"""
-        # Use shared device access if available
-        if self.open_device_func:
-            logging.info("Using shared device access")
-            self.device = self.open_device_func()
-            if self.device:
-                logging.info("Device opened successfully via shared access")
-                return True
-            else:
-                logging.warning("Shared device access failed")
-                return False
-        
-        # Fallback to direct access
         if self.vid is None or self.pid is None:
             return False
             
@@ -127,10 +106,7 @@ class RPMMonitor:
         """Close HID device"""
         if self.device:
             try:
-                # Use shared device access if available
-                if self.close_device_func:
-                    self.close_device_func(self.device)
-                elif hasattr(self.device, 'close'):
+                if hasattr(self.device, 'close'):
                     self.device.close()
                 self.device = None
             except Exception as e:
@@ -141,11 +117,6 @@ class RPMMonitor:
         if not self.device:
             return False
         
-        # For shared devices, just check if device exists
-        if self.open_device_func:
-            return self.device is not None
-        
-        # For direct devices, check if they're still open
         try:
             if hasattr(self.device, 'read'):
                 return True
@@ -243,7 +214,7 @@ class RPMMonitor:
         
         while self.is_monitoring:
             try:
-                if not self._is_device_open():
+                if self.device is None:
                     logging.info("Device not open, attempting to open...")
                     if not self._open_device():
                         logging.warning("Failed to open device, retrying in 1 second...")
@@ -303,10 +274,8 @@ class RPMMonitor:
                     
                 except Exception as e:
                     logging.debug(f"Error reading from device: {e}")
-                    # For shared devices, don't close the device on read errors
-                    if not self.open_device_func:
-                        # Only close device if it's not shared
-                        self._close_device()
+                    # Device might have disconnected, try to reconnect
+                    self._close_device()
                     time.sleep(1)
                     
             except Exception as e:
