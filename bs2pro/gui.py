@@ -562,7 +562,7 @@ class BS2ProGUI:
         dialog = ctk.CTkToplevel(self.root)
         dialog.title("Smart Mode Configuration")
         dialog.geometry("700x600")
-        dialog.minsize(650, 550)  # Set minimum size
+        dialog.minsize(650, 600)  # Set minimum size
         dialog.transient(self.root)
         
         # Center the dialog
