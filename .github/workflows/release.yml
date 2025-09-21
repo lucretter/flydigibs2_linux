@@ -71,7 +71,7 @@ jobs:
               --hidden-import=ttkbootstrap \
               --collect-data ttkbootstrap \
               --add-data "bs2pro/icon.png:." \
-              --add-data "package-files/tcl/msgcat.tcl:tcl" \
+              --add-data "bs2pro/tcl/msgcat.tcl:tcl" \
               bs2pro/main.py
           else
             echo "Including msgcat.tcl from $TCL_MSGCAT"
@@ -82,7 +82,7 @@ jobs:
               --collect-data ttkbootstrap \
               --add-data "bs2pro/icon.png:." \
               --add-data "$TCL_MSGCAT:tcl" \
-              --add-data "package-files/tcl/msgcat.tcl:tcl" \
+              --add-data "bs2pro/tcl/msgcat.tcl:tcl" \
               bs2pro/main.py
           fi
 
