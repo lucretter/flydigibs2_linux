@@ -104,12 +104,12 @@ class RPMMonitor:
         try:
             # Convert bytes to hex string for analysis
             hex_data = data.hex()
-            logging.debug(f"Received data: {hex_data}")
+            logging.info(f"Received data: {hex_data}")
             
             # Check if this is a BS2Pro status response
             # Pattern: 035aa5ef0b[changing_data]...
             if len(data) >= 10 and data[0] == 0x03 and data[1] == 0x5a and data[2] == 0xa5:
-                logging.debug("Detected BS2Pro status response")
+                logging.info("Detected BS2Pro status response")
                 
                 # Based on analysis, the most common RPM value is 1300 at position 8-9
                 # Let's prioritize the most likely positions for actual fan RPM
@@ -119,6 +119,8 @@ class RPMMonitor:
                     rpm_bytes = data[8:10]
                     rpm_le = struct.unpack('<H', rpm_bytes)[0]
                     rpm_be = struct.unpack('>H', rpm_bytes)[0]
+                    
+                    logging.info(f"Bytes 8-9: {rpm_bytes.hex()} -> LE: {rpm_le}, BE: {rpm_be}")
                     
                     if 1000 <= rpm_le <= 3000:  # Realistic fan RPM range
                         logging.info(f"Found RPM (LE) at bytes 8-9: {rpm_le}")
@@ -172,7 +174,9 @@ class RPMMonitor:
                             return scaled_be
                 
                 # No fallback methods - only use the accurate detection above
+                logging.info("No valid RPM found in BS2Pro status response")
             
+            logging.info("No BS2Pro status response detected")
             return None
             
         except Exception as e:
