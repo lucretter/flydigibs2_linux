@@ -20,12 +20,9 @@ class BS2ProGUI:
         self.root.title("BS2PRO Controller")
         
         # Set minimum size and auto-detect optimal size
-        self.root.minsize(500, 650)
-        self.root.geometry("550x700")
+        self.root.minsize(500, 700)
+        self.root.geometry("600x750")
         self.root.resizable(True, True)
-        
-        # Center the window on screen
-        self.center_window()
         
         # Set window icon if provided
         if icon_path and os.path.exists(icon_path):
@@ -39,15 +36,31 @@ class BS2ProGUI:
         
         self.setup_widgets()
         self.update_device_status()
+        
+        # Center window after widgets are created
+        self.root.after(100, self.center_window)
+        
         self.root.mainloop()
     
     def center_window(self):
         """Center the window on the screen"""
         self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        
+        # Get the actual window size after widgets are rendered
+        width = self.root.winfo_reqwidth()
+        height = self.root.winfo_reqheight()
+        
+        # Ensure minimum size
+        width = max(width, 600)
+        height = max(height, 750)
+        
+        # Calculate center position
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        
+        # Apply the geometry
         self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def on_rpm_select(self, selected_value=None):
@@ -288,7 +301,7 @@ class BS2ProGUI:
     def create_footer(self):
         """Create modern footer"""
         footer_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        footer_frame.pack(fill="x", pady=(10, 0))
+        footer_frame.pack(fill="x", pady=(20, 10))
         
         # Footer text
         footer_label = ctk.CTkLabel(
