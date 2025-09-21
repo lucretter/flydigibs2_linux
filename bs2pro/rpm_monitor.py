@@ -237,6 +237,9 @@ class RPMMonitor:
                             data = self.device.read(32, timeout=1000)  # 1000ms timeout
                             logging.info(f"Read completed, data: {data}")
                             if data:
+                                # Convert list to bytes if necessary
+                                if isinstance(data, list):
+                                    data = bytes(data)
                                 logging.info(f"Raw data: {data.hex()}")
                             else:
                                 logging.info("No data received (timeout)")
@@ -246,6 +249,9 @@ class RPMMonitor:
                             data = self.device.read(32)
                             logging.info(f"Read completed, data: {data}")
                             if data:
+                                # Convert list to bytes if necessary
+                                if isinstance(data, list):
+                                    data = bytes(data)
                                 logging.info(f"Raw data: {data.hex()}")
                             else:
                                 logging.info("No data received (no timeout)")
@@ -274,6 +280,9 @@ class RPMMonitor:
                             if hasattr(self.device, 'read'):
                                 data = self.device.read(32)
                                 if data:
+                                    # Convert list to bytes if necessary
+                                    if isinstance(data, list):
+                                        data = bytes(data)
                                     logging.info(f"Raw data (no timeout): {data.hex()}")
                                     rpm = self._decode_rpm_data(data)
                                     if rpm is not None and rpm != self.current_rpm:
