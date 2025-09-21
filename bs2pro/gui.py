@@ -6,7 +6,6 @@ import tkinter as tk
 from tkinter import messagebox
 from cpu_monitor import CPUMonitor
 from smart_mode import SmartModeManager
-from tray_manager import TrayManager
 
 class BS2ProGUI:
     def __init__(self, controller, config_manager, rpm_commands, commands, default_settings, icon_path=None):
@@ -19,7 +18,6 @@ class BS2ProGUI:
         # Initialize smart mode and CPU monitoring
         self.cpu_monitor = CPUMonitor()
         self.smart_mode_manager = SmartModeManager()
-        self.tray_manager = None
         self.current_rpm = None  # Track current RPM for smart mode
         
         # Set appearance mode and color theme
@@ -48,14 +46,6 @@ class BS2ProGUI:
         self.setup_widgets()
         self.update_device_status()
         
-        # Initialize system tray
-        self.tray_manager = TrayManager(self.root, self)
-        tray_started = self.tray_manager.start_tray()
-        
-        if tray_started:
-            logging.info("System tray initialized successfully")
-        else:
-            logging.warning("System tray not available - app will close normally instead of minimizing to tray")
         
         # Setup CPU monitoring callbacks
         self.cpu_monitor.add_callback(self.on_temperature_change)
@@ -66,12 +56,8 @@ class BS2ProGUI:
         # Center window after widgets are created
         self.root.after(100, self.center_window)
         
-        # Handle window close and minimize events
+        # Handle window close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-        
-        # Add keyboard shortcut for force exit (Ctrl+Q)
-        self.root.bind("<Control-q>", lambda e: self.force_exit())
-        self.root.bind("<Control-Q>", lambda e: self.force_exit())
         
         self.root.mainloop()
 
@@ -421,10 +407,6 @@ class BS2ProGUI:
         """Called when CPU temperature changes"""
         # Update temperature display
         self.temp_label.configure(text=f"CPU Temperature: {temperature:.1f}°C")
-        
-        # Update tray tooltip
-        if self.tray_manager:
-            self.tray_manager.update_tray_tooltip(f"BS2PRO Controller - CPU: {temperature:.1f}°C")
         
         # Auto-adjust RPM if smart mode is enabled
         if self.smart_mode_manager.is_smart_mode_enabled():
@@ -876,16 +858,6 @@ class BS2ProGUI:
     
     def on_closing(self):
         """Handle window closing event (X button)"""
-        if self.tray_manager and self.tray_manager.is_tray_working():
-            # Hide to system tray instead of closing
-            self.tray_manager.hide_window()
-        else:
-            # Close normally if tray not available
-            self.cleanup()
-            self.root.destroy()
-    
-    def force_exit(self):
-        """Force exit the application (called from tray menu)"""
         self.cleanup()
         self.root.destroy()
     
@@ -893,5 +865,3 @@ class BS2ProGUI:
         """Cleanup resources"""
         if self.cpu_monitor:
             self.cpu_monitor.stop_monitoring()
-        if self.tray_manager:
-            self.tray_manager.stop_tray()
