@@ -50,7 +50,12 @@ class BS2ProGUI:
         
         # Initialize system tray
         self.tray_manager = TrayManager(self.root, self)
-        self.tray_manager.start_tray()
+        tray_started = self.tray_manager.start_tray()
+        
+        if tray_started:
+            logging.info("System tray initialized successfully")
+        else:
+            logging.warning("System tray not available - app will close normally instead of minimizing to tray")
         
         # Setup CPU monitoring callbacks
         self.cpu_monitor.add_callback(self.on_temperature_change)
@@ -867,7 +872,7 @@ class BS2ProGUI:
     
     def on_closing(self):
         """Handle window closing event"""
-        if self.tray_manager and self.tray_manager.tray_available:
+        if self.tray_manager and self.tray_manager.is_tray_working():
             # Hide to system tray instead of closing
             self.tray_manager.hide_window()
         else:

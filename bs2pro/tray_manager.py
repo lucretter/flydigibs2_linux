@@ -82,12 +82,20 @@ class TrayManager:
     def hide_window(self):
         """Hide the main window to system tray"""
         if self.tray_available and self.tray_icon:
-            self.root.withdraw()
-            self.is_minimized = True
+            try:
+                self.root.withdraw()
+                self.is_minimized = True
+                logging.info("Window hidden to system tray")
+            except Exception as e:
+                logging.error(f"Error hiding window to tray: {e}")
+                # Fallback: minimize to taskbar
+                self.root.iconify()
+                self.is_minimized = True
         else:
             # Fallback: minimize to taskbar
             self.root.iconify()
             self.is_minimized = True
+            logging.warning("System tray not available - minimizing to taskbar instead")
     
     def toggle_smart_mode(self, icon=None, item=None):
         """Toggle smart mode from tray menu"""
@@ -110,13 +118,24 @@ class TrayManager:
     
     def start_tray(self):
         """Start the system tray icon"""
-        if self.tray_available and self.create_tray_icon():
+        if not self.tray_available:
+            logging.warning("System tray not available - pystray not installed")
+            return False
+            
+        if not self.create_tray_icon():
+            logging.error("Failed to create tray icon")
+            return False
+            
+        try:
             # Run tray icon in a separate thread
             import threading
             tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
             tray_thread.start()
+            logging.info("System tray icon started successfully")
             return True
-        return False
+        except Exception as e:
+            logging.error(f"Error starting tray icon: {e}")
+            return False
     
     def stop_tray(self):
         """Stop the system tray icon"""
@@ -131,3 +150,7 @@ class TrayManager:
     def is_window_minimized(self):
         """Check if window is minimized to tray"""
         return self.is_minimized
+    
+    def is_tray_working(self):
+        """Check if system tray is working properly"""
+        return self.tray_available and self.tray_icon is not None
