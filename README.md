@@ -118,21 +118,6 @@ Supported CLI commands:
 - `autostart_off`, `autostart_instant`, `autostart_delayed`
 - `startwhenpowered_on`, `startwhenpowered_off`
 
-### Testing RPM Monitoring
-
-To test the RPM monitoring functionality:
-
-```bash
-# Run the RPM monitor test script
-python3 test_rpm_monitor.py
-```
-
-This will:
-- Detect your BS2Pro device
-- Start monitoring for RPM data
-- Display real-time RPM readings
-- Help debug any communication issues
-
 ### Logs and Debugging
 
 Application logs are stored at:  
