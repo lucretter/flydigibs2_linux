@@ -31,7 +31,7 @@ fi
 source "$VENV_DIR/bin/activate"
 
 APP_NAME="bs2pro_controller"
-MAIN_SCRIPT="main.py"
+MAIN_SCRIPT="bs2pro/main.py"
 
 # Check for PyInstaller, install if missing
 if ! "$VENV_DIR/bin/pyinstaller" --version &> /dev/null; then
