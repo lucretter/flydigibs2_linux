@@ -39,7 +39,8 @@ class BS2ProController:
         
         # Initialize RPM monitor with shared device access
         self.rpm_monitor = RPMMonitor()
-        self.rpm_monitor.set_shared_device_access(self.detect_bs2pro, self._open_shared_device, self._close_shared_device)
+        self.shared_device = None
+        self.rpm_monitor.set_shared_device_access(self.detect_bs2pro, self._get_shared_device, self._close_shared_device)
 
     def detect_bs2pro(self):
         if hid is None:
@@ -127,8 +128,11 @@ class BS2ProController:
             logging.error(f"HID error: {e}")
             return False
     
-    def _open_shared_device(self):
-        """Open HID device for shared access"""
+    def _get_shared_device(self):
+        """Get or create shared HID device for continuous access"""
+        if self.shared_device is not None:
+            return self.shared_device
+            
         if hid is None:
             return None
             
@@ -137,26 +141,31 @@ class BS2ProController:
             if vid is None or pid is None:
                 return None
             
+            logging.info(f"Creating shared HID device VID={vid:04x}, PID={pid:04x}")
             if hasattr(hid, 'Device'):
-                return hid.Device(vid=vid, pid=pid)
+                self.shared_device = hid.Device(vid=vid, pid=pid)
             elif hasattr(hid, 'device'):
-                dev = hid.device()
-                dev.open(vid, pid)
-                return dev
+                self.shared_device = hid.device()
+                self.shared_device.open(vid, pid)
             elif hasattr(hid, 'open'):
-                return hid.open(vid, pid)
+                self.shared_device = hid.open(vid, pid)
             else:
                 return None
+            
+            logging.info("Shared HID device created successfully")
+            return self.shared_device
         except Exception as e:
-            logging.error(f"Error opening shared HID device: {e}")
+            logging.error(f"Error creating shared HID device: {e}")
             return None
     
     def _close_shared_device(self, device):
-        """Close shared HID device"""
-        if device:
+        """Close shared HID device (only called when RPM monitoring stops)"""
+        if self.shared_device and self.shared_device == device:
             try:
-                if hasattr(device, 'close'):
-                    device.close()
+                if hasattr(self.shared_device, 'close'):
+                    self.shared_device.close()
+                self.shared_device = None
+                logging.info("Shared HID device closed")
             except Exception as e:
                 logging.error(f"Error closing shared HID device: {e}")
     

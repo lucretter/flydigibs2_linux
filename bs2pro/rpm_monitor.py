@@ -136,6 +136,23 @@ class RPMMonitor:
             except Exception as e:
                 logging.error(f"Error closing HID device: {e}")
     
+    def _is_device_open(self):
+        """Check if device is open and accessible"""
+        if not self.device:
+            return False
+        
+        # For shared devices, just check if device exists
+        if self.open_device_func:
+            return self.device is not None
+        
+        # For direct devices, check if they're still open
+        try:
+            if hasattr(self.device, 'read'):
+                return True
+            return False
+        except:
+            return False
+    
     def _decode_rpm_data(self, data):
         """Decode RPM data from HID report"""
         try:
@@ -226,7 +243,7 @@ class RPMMonitor:
         
         while self.is_monitoring:
             try:
-                if self.device is None:
+                if not self._is_device_open():
                     logging.info("Device not open, attempting to open...")
                     if not self._open_device():
                         logging.warning("Failed to open device, retrying in 1 second...")
