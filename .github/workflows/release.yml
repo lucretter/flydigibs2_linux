@@ -34,7 +34,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller hidapi customtkinter
+          pip install pyinstaller hidapi customtkinter PyQt6
 
       - name: Create desktop file
         run: |
@@ -63,6 +63,7 @@ jobs:
             --add-data 'bs2pro/controller.py:.' \
             --add-data 'bs2pro/config.py:.' \
             --add-data 'bs2pro/gui.py:.' \
+            --add-data 'bs2pro/qt_tray_manager.py:.' \
             --add-data 'bs2pro/udev_manager.py:.' \
             --add-data 'bs2pro/cpu_monitor.py:.' \
             --add-data 'bs2pro/smart_mode.py:.' \
@@ -71,11 +72,16 @@ jobs:
             --hidden-import=hid \
             --hidden-import=hidapi.hidapi \
             --hidden-import=customtkinter \
+            --hidden-import=PyQt6 \
+            --hidden-import=PyQt6.QtCore \
+            --hidden-import=PyQt6.QtGui \
+            --hidden-import=PyQt6.QtWidgets \
             --hidden-import=rpm_monitor \
             --hidden-import=bs2pro.rpm_monitor \
             --hidden-import=bs2pro.controller \
             --hidden-import=bs2pro.gui \
             --hidden-import=bs2pro.config \
+            --hidden-import=bs2pro.qt_tray_manager \
             --hidden-import=bs2pro.udev_manager \
             --hidden-import=bs2pro.cpu_monitor \
             --hidden-import=bs2pro.smart_mode \
@@ -84,6 +90,7 @@ jobs:
             --collect-submodules=hidapi \
             --collect-all=customtkinter \
             --collect-data=customtkinter \
+            --collect-all=PyQt6 \
             --collect-all=bs2pro"
           
           # Add HID library binaries if they exist
@@ -107,7 +114,8 @@ jobs:
             -d "libhidapi-hidraw0" \
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
-            --description "Controller for BS2PRO devices" \
+            -d "python3-pyqt6" \
+            --description "Controller for BS2PRO devices with system tray support" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
             --category "utils" \
@@ -120,7 +128,8 @@ jobs:
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "hidapi" \
             -d "python3-tkinter" \
-            --description "Controller for BS2PRO devices" \
+            -d "python3-qt6" \
+            --description "Controller for BS2PRO devices with system tray support" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
             --category "Applications/System" \

@@ -7,6 +7,15 @@ from tkinter import messagebox
 from cpu_monitor import CPUMonitor
 from smart_mode import SmartModeManager
 
+# Try to import Qt tray manager for system tray functionality
+try:
+    from qt_tray_manager import QtTrayManager
+    TRAY_AVAILABLE = True
+except ImportError:
+    logging.warning("Qt tray manager not available - running without system tray support")
+    QtTrayManager = None
+    TRAY_AVAILABLE = False
+
 class BS2ProGUI:
     def __init__(self, controller, config_manager, rpm_commands, commands, default_settings, icon_path=None):
         self.controller = controller
@@ -14,11 +23,16 @@ class BS2ProGUI:
         self.rpm_commands = rpm_commands
         self.commands = commands
         self.default_settings = default_settings
+        self.icon_path = icon_path
         
         # Initialize smart mode and CPU monitoring
         self.cpu_monitor = CPUMonitor()
         self.smart_mode_manager = SmartModeManager()
         self.current_rpm = None  # Track current RPM for smart mode
+        
+        # Initialize tray manager
+        self.tray_manager = None
+        self.minimize_to_tray = True  # Option to minimize to tray instead of taskbar
         
         # Set appearance mode and color theme
         ctk.set_appearance_mode("dark")  # "light" or "dark"
@@ -46,6 +60,8 @@ class BS2ProGUI:
         self.setup_widgets()
         self.update_device_status()
         
+        # Initialize system tray if available
+        self._setup_tray()
         
         # Setup CPU monitoring callbacks
         self.cpu_monitor.add_callback(self.on_temperature_change)
@@ -64,6 +80,10 @@ class BS2ProGUI:
         
         # Handle window close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # Bind window state change event for minimize handling
+        self.root.bind('<Unmap>', self._on_window_state_change)
+        self.root.bind('<Map>', self._on_window_map)
         
         self.root.mainloop()
 
@@ -87,6 +107,72 @@ class BS2ProGUI:
         
         # Apply the geometry
         self.root.geometry(f"{width}x{height}+{x}+{y}")
+
+    def _setup_tray(self):
+        """Set up the system tray icon."""
+        if TRAY_AVAILABLE and QtTrayManager:
+            try:
+                # Add a small delay to ensure GUI is fully initialized
+                self.root.after(500, self._initialize_tray)
+            except Exception as e:
+                logging.error(f"Failed to schedule tray initialization: {e}")
+        else:
+            logging.info("System tray not available")
+
+    def _initialize_tray(self):
+        """Initialize the tray icon after GUI is ready."""
+        try:
+            if TRAY_AVAILABLE and QtTrayManager:
+                logging.info("Initializing Qt system tray")
+                self.tray_manager = QtTrayManager(self, self.icon_path)
+                if self.tray_manager.start():
+                    logging.info("Qt system tray icon initialized successfully")
+                else:
+                    logging.error("Failed to start Qt tray manager")
+                    self.tray_manager = None
+            else:
+                logging.warning("Qt tray manager not available")
+                self.tray_manager = None
+                
+        except Exception as e:
+            logging.error(f"Failed to initialize system tray: {e}")
+            self.tray_manager = None
+
+    def _on_window_state_change(self, event):
+        """Handle window state changes (minimize, etc.)."""
+        # Only handle events for the main window and when it's being minimized
+        if event.widget == self.root and self.minimize_to_tray and self.tray_manager:
+            # Check if the window is actually being minimized
+            if self.root.state() == 'iconic':
+                self.root.after(100, self._minimize_to_tray)
+
+    def _on_window_map(self, event):
+        """Handle window being mapped (shown)."""
+        if event.widget == self.root:
+            logging.debug("Window mapped (shown)")
+
+    def _minimize_to_tray(self):
+        """Minimize the window to system tray."""
+        if self.tray_manager and self.tray_manager.is_running:
+            self.root.withdraw()  # Hide window
+            logging.info("Window minimized to system tray")
+
+    def show_from_tray(self):
+        """Show window from system tray (called by tray manager)."""
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+        self.root.state('normal')
+
+    def toggle_smart_mode(self):
+        """Toggle smart mode on/off (called from tray menu)."""
+        try:
+            if hasattr(self, 'smart_mode_enabled_var'):
+                current_state = self.smart_mode_enabled_var.get()
+                self.smart_mode_enabled_var.set(not current_state)
+                logging.info(f"Smart mode toggled to: {not current_state}")
+        except Exception as e:
+            logging.error(f"Error toggling smart mode: {e}")
 
     def on_rpm_select(self, selected_value=None):
         # CustomTkinter passes the selected value directly
@@ -834,8 +920,13 @@ class BS2ProGUI:
     
     def on_closing(self):
         """Handle window closing event (X button)"""
-        self.cleanup()
-        self.root.destroy()
+        if self.minimize_to_tray and self.tray_manager and self.tray_manager.is_running:
+            # Instead of closing, minimize to tray
+            self._minimize_to_tray()
+        else:
+            # Actually close the application
+            self.cleanup()
+            self.root.destroy()
     
     def cleanup(self):
         """Cleanup resources"""
@@ -843,3 +934,5 @@ class BS2ProGUI:
             self.cpu_monitor.stop_monitoring()
         if self.controller:
             self.controller.stop_rpm_monitoring()
+        if self.tray_manager:
+            self.tray_manager.stop()

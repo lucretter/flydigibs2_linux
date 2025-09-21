@@ -16,6 +16,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - 🎛️ **RPM Indicator** — Enable/disable RPM feedback  
 - 🧠 **Smart Mode** — Automatic fan control based on CPU temperature  
 - 📊 **Real-time RPM Monitoring** — Live display of actual fan RPM from the device  
+- 🗂️ **System Tray Integration** — Minimize to system tray with right-click menu
 - 🧪 **CLI Support** — Send commands directly via terminal 
 
 ## 📦 Requirements
@@ -23,6 +24,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - Python 3.8+
 - [hidapi](https://pypi.org/project/hid/)
 - [ttkbootstrap](https://pypi.org/project/ttkbootstrap/)
+- [PyQt6](https://pypi.org/project/PyQt6/) (for system tray functionality)
 - tkinter (usually bundled with Python)
 - Flydigi BS2Pro (might work on other models, haven't tested)
 

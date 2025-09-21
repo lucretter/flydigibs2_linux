@@ -41,10 +41,18 @@ fi
 
 # Ensure required Python packages are installed in venv
 echo "Installing required Python packages in venv..."
-pip install hid ttkbootstrap
+pip install hid ttkbootstrap PyQt6
 
 # Build executable
-pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" --hidden-import=PIL._tkinter_finder --add-data "bs2pro/icon.png:."
+pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" \
+    --hidden-import=PIL._tkinter_finder \
+    --hidden-import=PyQt6 \
+    --hidden-import=PyQt6.QtCore \
+    --hidden-import=PyQt6.QtGui \
+    --hidden-import=PyQt6.QtWidgets \
+    --add-data "bs2pro/icon.png:." \
+    --add-data "bs2pro/qt_tray_manager.py:." \
+    --collect-all=PyQt6
 
 # Move executable to /usr/bin (requires sudo)
 EXE_PATH="dist/$APP_NAME"

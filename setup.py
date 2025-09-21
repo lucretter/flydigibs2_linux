@@ -8,6 +8,9 @@ setup(
     install_requires=[
         "ttkbootstrap",
         "hidapi",
+        "Pillow",
+        "customtkinter",
+        "PyQt6",
     ],
     entry_points={
         "console_scripts": [
