@@ -1,4 +1,7 @@
 import tkinter as tk
+msgcat_path = os.path.join(os.path.dirname(__file__), 'tcl', 'msgcat.tcl')
+if os.path.exists(msgcat_path):
+    tkinter.Tk().tk.eval(f'source "{msgcat_path}"')
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 import os
