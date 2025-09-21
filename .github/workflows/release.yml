@@ -35,12 +35,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller Pillow ttkbootstrap hidapi
 
-      - name: Copy Tcl msgcat.tcl
-        run: |
-          mkdir -p package-files/tcl
-          cp /usr/share/tcltk/msgcat*/msgcat.tcl package-files/tcl/msgcat.tcl || \
-          cp /usr/share/tcl/msgcat*/msgcat.tcl package-files/tcl/msgcat.tcl
-
       - name: Create desktop file
         run: |
           # Create icon directory
