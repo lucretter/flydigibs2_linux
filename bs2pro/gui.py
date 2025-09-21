@@ -1,10 +1,15 @@
 import tkinter as tk
-msgcat_path = os.path.join(os.path.dirname(__file__), 'tcl', 'msgcat.tcl')
-if os.path.exists(msgcat_path):
-    tkinter.Tk().tk.eval(f'source "{msgcat_path}"')
-import ttkbootstrap as tb
-from ttkbootstrap.constants import *
 import os
+import sys
+
+# Locate msgcat.tcl inside PyInstaller bundle or source tree
+base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
+msgcat_path = os.path.join(base_path, 'tcl', 'msgcat.tcl')
+
+if os.path.exists(msgcat_path):
+    tk.Tk().tk.eval(f'source "{msgcat_path}"')
+import ttkbootstrap as tb 
+from ttkbootstrap.constants import *
 import logging
 
 class BS2ProGUI:
