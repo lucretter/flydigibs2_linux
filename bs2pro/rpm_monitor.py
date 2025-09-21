@@ -69,19 +69,30 @@ class RPMMonitor:
             return False
             
         try:
+            logging.info(f"Attempting to open HID device VID={self.vid:04x}, PID={self.pid:04x}")
             if hasattr(hid, 'Device'):
                 # New hidapi API (0.14+)
+                logging.info("Using new hidapi API (Device)")
                 self.device = hid.Device(vid=self.vid, pid=self.pid)
+                logging.info("Device opened successfully with new API")
                 return True
             elif hasattr(hid, 'device'):
                 # hidapi 0.14.0.post4 API (lowercase device)
+                logging.info("Using hidapi 0.14.0.post4 API (device)")
                 self.device = hid.device()
                 self.device.open(self.vid, self.pid)
+                logging.info("Device opened successfully with 0.14.0.post4 API")
                 return True
             elif hasattr(hid, 'open'):
                 # Old hidapi API (0.13 and earlier)
+                logging.info("Using old hidapi API (open)")
                 self.device = hid.open(self.vid, self.pid)
-                return self.device is not None
+                success = self.device is not None
+                if success:
+                    logging.info("Device opened successfully with old API")
+                else:
+                    logging.warning("Device open returned None")
+                return success
             else:
                 logging.error("Unsupported hidapi version")
                 return False
@@ -190,9 +201,13 @@ class RPMMonitor:
         while self.is_monitoring:
             try:
                 if self.device is None:
+                    logging.info("Device not open, attempting to open...")
                     if not self._open_device():
+                        logging.warning("Failed to open device, retrying in 1 second...")
                         time.sleep(1)
                         continue
+                    else:
+                        logging.info("Device opened successfully")
                 
                 # Try to read data from the device
                 try:
@@ -204,12 +219,13 @@ class RPMMonitor:
                             # Some versions don't support timeout parameter
                             data = self.device.read(32)
                     else:
+                        logging.debug("No data received from device")
                         time.sleep(interval)
                         continue
                     
                     if data:
                         # Log raw data for analysis
-                        logging.debug(f"Raw data: {data.hex()}")
+                        logging.info(f"Raw data: {data.hex()}")
                         
                         rpm = self._decode_rpm_data(data)
                         if rpm is not None and rpm != self.current_rpm:
