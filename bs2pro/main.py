@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import argparse
 from logging.handlers import RotatingFileHandler
 
 # Add the current directory to Python path for imports
@@ -80,13 +81,24 @@ else:
 
 ICON_PATH = os.path.join(base_path, "icon.png")
 
-# Set up log rotation: 1MB per file, keep 3 backups
-log_handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=3)
-log_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-log_handler.setFormatter(log_formatter)
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-root_logger.addHandler(log_handler)
+def setup_logging(verbose=False):
+    """Set up logging with appropriate level based on verbose flag"""
+    # Set up log rotation: 1MB per file, keep 3 backups
+    log_handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=3)
+    log_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+    log_handler.setFormatter(log_formatter)
+    root_logger = logging.getLogger()
+    
+    # Set logging level based on verbose flag
+    if verbose:
+        root_logger.setLevel(logging.DEBUG)
+        print("🔍 Verbose logging enabled - detailed logs will be shown")
+    else:
+        root_logger.setLevel(logging.WARNING)  # Only show warnings and errors by default
+        print("ℹ️  Normal logging mode - use -v for detailed logs")
+    
+    root_logger.addHandler(log_handler)
+    return root_logger
 
 DEFAULT_SETTINGS = {
     "last_rpm": "1300",
@@ -140,9 +152,21 @@ def check_and_prompt_udev_rules(controller, config_manager):
         root.destroy()
 
 def handle_cli_args(controller, config_manager):
-    import sys
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].lower()
+    """Handle command line arguments for CLI mode"""
+    parser = argparse.ArgumentParser(description='BS2Pro Controller')
+    parser.add_argument('-v', '--verbose', action='store_true', 
+                       help='Enable verbose logging (show detailed debug information)')
+    parser.add_argument('command', nargs='?', 
+                       help='Command to execute (rpm_1300, rpm_2700, etc.)')
+    
+    args = parser.parse_args()
+    
+    # Set up logging based on verbose flag
+    setup_logging(verbose=args.verbose)
+    
+    # Handle commands if provided
+    if args.command:
+        arg = args.command.lower()
         if arg.startswith("rpm_"):
             try:
                 rpm_value = int(arg.split("_")[1])
@@ -165,6 +189,8 @@ def handle_cli_args(controller, config_manager):
         else:
             print(f"❌ Unknown command: {arg}")
         sys.exit(0)
+    
+    return args.verbose
 
 if __name__ == "__main__":
     controller = BS2ProController()
@@ -173,8 +199,8 @@ if __name__ == "__main__":
     # Initialize settings if this is the first run
     config_manager.initialize_settings()
     
-    # Handle CLI args first (before any GUI stuff)
-    handle_cli_args(controller, config_manager)
+    # Handle CLI args first (before any GUI stuff) and get verbose flag
+    verbose = handle_cli_args(controller, config_manager)
     
     # Check and prompt for udev rules if needed (only in GUI mode)
     check_and_prompt_udev_rules(controller, config_manager)

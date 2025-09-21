@@ -78,10 +78,10 @@ class RPMMonitor:
         """Open HID device for reading"""
         # Use shared device if available
         if self.get_shared_device_func:
-            logging.info("Using shared device for RPM monitoring")
+            logging.debug("Using shared device for RPM monitoring")
             self.device = self.get_shared_device_func()
             if self.device:
-                logging.info("Shared device obtained successfully")
+                logging.debug("Shared device obtained successfully")
                 return True
             else:
                 logging.warning("Failed to get shared device")
@@ -126,11 +126,11 @@ class RPMMonitor:
     def _close_device(self):
         """Close HID device"""
         if self.device:
-            logging.info("Closing HID device")
+            logging.debug("Closing HID device")
             try:
                 # For shared devices, don't close the device
                 if self.get_shared_device_func:
-                    logging.info("Releasing shared device")
+                    logging.debug("Releasing shared device")
                     if self.release_shared_device_func:
                         self.release_shared_device_func()
                     self.device = None
@@ -139,7 +139,7 @@ class RPMMonitor:
                     if hasattr(self.device, 'close'):
                         self.device.close()
                     self.device = None
-                logging.info("HID device closed successfully")
+                logging.debug("HID device closed successfully")
             except Exception as e:
                 logging.error(f"Error closing HID device: {e}")
         else:
@@ -258,32 +258,32 @@ class RPMMonitor:
                 
                 # Try to read data from the device
                 try:
-                    logging.info("Attempting to read from device...")
+                    logging.debug("Attempting to read from device...")
                     # Try with timeout first, fallback to without timeout
                     if hasattr(self.device, 'read'):
                         try:
                             logging.debug("Trying read with timeout...")
                             data = self.device.read(32, timeout=1000)  # 1000ms timeout
-                            logging.info(f"Read completed, data: {data}")
+                            logging.debug(f"Read completed, data: {data}")
                             if data:
                                 # Convert list to bytes if necessary
                                 if isinstance(data, list):
                                     data = bytes(data)
-                                logging.info(f"Raw data: {data.hex()}")
+                                logging.debug(f"Raw data: {data.hex()}")
                             else:
-                                logging.info("No data received (timeout)")
+                                logging.debug("No data received (timeout)")
                         except TypeError:
                             # Some versions don't support timeout parameter
                             logging.debug("Timeout not supported, trying without timeout...")
                             data = self.device.read(32)
-                            logging.info(f"Read completed, data: {data}")
+                            logging.debug(f"Read completed, data: {data}")
                             if data:
                                 # Convert list to bytes if necessary
                                 if isinstance(data, list):
                                     data = bytes(data)
-                                logging.info(f"Raw data: {data.hex()}")
+                                logging.debug(f"Raw data: {data.hex()}")
                             else:
-                                logging.info("No data received (no timeout)")
+                                logging.debug("No data received (no timeout)")
                         except Exception as e:
                             logging.error(f"Read error: {e}")
                             data = None
@@ -294,7 +294,7 @@ class RPMMonitor:
                     
                     if data:
                         # Data received, process it
-                        logging.info(f"Data received: {len(data)} bytes")
+                        logging.debug(f"Data received: {len(data)} bytes")
                         
                         rpm = self._decode_rpm_data(data)
                         if rpm is not None and rpm != self.current_rpm:
@@ -312,7 +312,7 @@ class RPMMonitor:
                                     # Convert list to bytes if necessary
                                     if isinstance(data, list):
                                         data = bytes(data)
-                                    logging.info(f"Raw data (no timeout): {data.hex()}")
+                                    logging.debug(f"Raw data (no timeout): {data.hex()}")
                                     rpm = self._decode_rpm_data(data)
                                     if rpm is not None and rpm != self.current_rpm:
                                         self.current_rpm = rpm
@@ -339,7 +339,7 @@ class RPMMonitor:
     
     def start_monitoring(self, interval=0.1):
         """Start monitoring RPM data"""
-        logging.info(f"start_monitoring called, is_monitoring: {self.is_monitoring}")
+        logging.debug(f"start_monitoring called, is_monitoring: {self.is_monitoring}")
         if self.is_monitoring:
             logging.warning("RPM monitoring is already running")
             return

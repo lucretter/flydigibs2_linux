@@ -70,7 +70,7 @@ class BS2ProController:
             # Use shared device if available, otherwise create temporary one
             dev = self._get_shared_device()
             if dev:
-                logging.info("Using shared device for command")
+                logging.debug("Using shared device for command")
                 payload = bytes.fromhex(hex_cmd)
                 dev.write(payload)
                 # Try with timeout first, fallback to without timeout
@@ -153,7 +153,7 @@ class BS2ProController:
                     if vid is None or pid is None:
                         return None
                     
-                    logging.info(f"Creating shared HID device VID={vid:04x}, PID={pid:04x}")
+                    logging.debug(f"Creating shared HID device VID={vid:04x}, PID={pid:04x}")
                     if hasattr(hid, 'Device'):
                         self.shared_device = hid.Device(vid=vid, pid=pid)
                     elif hasattr(hid, 'device'):
@@ -164,7 +164,7 @@ class BS2ProController:
                     else:
                         return None
                     
-                    logging.info("Shared HID device created successfully")
+                    logging.debug("Shared HID device created successfully")
                 except Exception as e:
                     logging.error(f"Error creating shared HID device: {e}")
                     return None
@@ -179,13 +179,13 @@ class BS2ProController:
                     if hasattr(self.shared_device, 'close'):
                         self.shared_device.close()
                     self.shared_device = None
-                    logging.info("Shared HID device released")
+                    logging.debug("Shared HID device released")
                 except Exception as e:
                     logging.error(f"Error releasing shared HID device: {e}")
     
     def start_rpm_monitoring(self, callback=None):
         """Start monitoring RPM data from the device"""
-        logging.info(f"start_rpm_monitoring called with callback: {callback is not None}")
+        logging.debug(f"start_rpm_monitoring called with callback: {callback is not None}")
         if callback:
             self.rpm_monitor.add_callback(callback)
         self.rpm_monitor.start_monitoring()
