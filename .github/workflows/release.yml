@@ -114,8 +114,7 @@ jobs:
             -d "libhidapi-hidraw0" \
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
-            -d "python3-pyqt6" \
-            --description "Controller for BS2PRO devices with system tray support" \
+            --description "Controller for BS2PRO devices with system tray support (Qt6 bundled)" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
             --category "utils" \
@@ -125,11 +124,11 @@ jobs:
 
       - name: Build .rpm with dependencies
         run: |
+          # Build RPM with basic dependencies (PyQt6 will be bundled in the executable)
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "hidapi" \
             -d "python3-tkinter" \
-            -d "python3-qt6" \
-            --description "Controller for BS2PRO devices with system tray support" \
+            --description "Controller for BS2PRO devices with system tray support (Qt6 bundled)" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
             --category "Applications/System" \
