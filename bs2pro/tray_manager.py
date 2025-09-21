@@ -26,6 +26,16 @@ class TrayManager:
         except ImportError as e:
             self.tray_available = False
             logging.warning(f"pystray not available - system tray functionality disabled: {e}")
+        
+        # Fallback to simple tray manager
+        self.simple_tray = None
+        if not self.tray_available:
+            try:
+                from simple_tray_manager import SimpleTrayManager
+                self.simple_tray = SimpleTrayManager(root, gui_instance)
+                logging.info("Fallback to simple tray manager")
+            except ImportError as e:
+                logging.warning(f"Could not load simple tray manager: {e}")
     
     def create_tray_icon(self):
         """Create system tray icon"""
@@ -117,7 +127,10 @@ class TrayManager:
     
     def hide_window(self):
         """Hide the main window to system tray"""
-        if self.tray_available and self.tray_icon:
+        if self.simple_tray and not self.tray_available:
+            # Use simple tray
+            self.simple_tray.hide_window()
+        elif self.tray_available and self.tray_icon:
             try:
                 self.root.withdraw()
                 self.is_minimized = True
@@ -167,12 +180,21 @@ class TrayManager:
     
     def start_tray(self):
         """Start the system tray icon"""
+        # If pystray is not available, use simple tray
         if not self.tray_available:
-            logging.warning("System tray not available - pystray not installed")
-            return False
-            
+            if self.simple_tray:
+                return self.simple_tray.start_tray()
+            else:
+                logging.warning("No tray functionality available")
+                return False
+        
+        # Try pystray first
         if not self.create_tray_icon():
             logging.error("Failed to create tray icon")
+            # Fallback to simple tray
+            if self.simple_tray:
+                logging.info("Falling back to simple tray manager")
+                return self.simple_tray.start_tray()
             return False
             
         try:
@@ -192,6 +214,10 @@ class TrayManager:
                         self.tray_icon.run()
                 except Exception as e:
                     logging.error(f"Error in tray thread: {e}")
+                    # If pystray fails, try simple tray
+                    if self.simple_tray:
+                        logging.info("pystray failed, falling back to simple tray")
+                        self.simple_tray.start_tray()
             
             # Start the tray thread
             tray_thread = threading.Thread(target=run_tray, daemon=True)
@@ -205,6 +231,10 @@ class TrayManager:
                 
         except Exception as e:
             logging.error(f"Error starting tray icon: {e}")
+            # Fallback to simple tray
+            if self.simple_tray:
+                logging.info("Falling back to simple tray manager due to error")
+                return self.simple_tray.start_tray()
             return False
     
     def stop_tray(self):
@@ -223,4 +253,6 @@ class TrayManager:
     
     def is_tray_working(self):
         """Check if system tray is working properly"""
+        if self.simple_tray and not self.tray_available:
+            return self.simple_tray.is_tray_working()
         return self.tray_available and self.tray_icon is not None
