@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 # Entry point: wire up controller, config, and GUI
 from controller import BS2ProController
 from config import ConfigManager
-from gui_simple import BS2ProGUI  # Use the simple GUI
+from gui import BS2ProGUI
 from udev_manager import UdevRulesManager
 
 ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")

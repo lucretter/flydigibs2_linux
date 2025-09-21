@@ -1,4 +1,4 @@
-name: Build and Release Packages (Simple)
+name: Build and Release Packages
 
 permissions:
   contents: write
@@ -54,12 +54,12 @@ jobs:
           StartupNotify=false
           EOF
 
-      - name: Build binary (Simple)
+      - name: Build binary
         run: |
           pyinstaller --onefile --name bs2pro_controller \
             --add-data "bs2pro/icon.png:." \
             --hidden-import=hidapi \
-            bs2pro/main_simple.py
+            bs2pro/main.py
 
       - name: Build .deb with dependencies
         run: |
