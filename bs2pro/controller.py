@@ -1,4 +1,5 @@
 import logging
+import threading
 
 # Import RPM monitor with fallback for packaging
 try:
@@ -37,8 +38,11 @@ class BS2ProController:
         else:
             logging.warning("HID library not available")
         
-        # Initialize RPM monitor with direct device access
+        # Initialize RPM monitor with shared device access
         self.rpm_monitor = RPMMonitor()
+        self.shared_device = None
+        self.device_lock = threading.Lock()
+        self.rpm_monitor.set_shared_device_access(self._get_shared_device, self._release_shared_device)
 
     def detect_bs2pro(self):
         if hid is None:
@@ -63,17 +67,10 @@ class BS2ProController:
             return False
             
         try:
-            vid, pid = self.detect_bs2pro()
-            if vid is None or pid is None:
-                if status_callback:
-                    status_callback("❌ BS2PRO device not found", "danger")
-                logging.error("BS2PRO device not found.")
-                return False
-            
-            # Try different hidapi APIs based on version
-            if hasattr(hid, 'Device'):
-                # New hidapi API (0.14+)
-                dev = hid.Device(vid=vid, pid=pid)
+            # Use shared device if available, otherwise create temporary one
+            dev = self._get_shared_device()
+            if dev:
+                logging.info("Using shared device for command")
                 payload = bytes.fromhex(hex_cmd)
                 dev.write(payload)
                 # Try with timeout first, fallback to without timeout
@@ -82,39 +79,60 @@ class BS2ProController:
                 except TypeError:
                     # Some versions don't support timeout parameter
                     dev.read(32)
-                dev.close()
-            elif hasattr(hid, 'device'):
-                # hidapi 0.14.0.post4 API (lowercase device)
-                dev = hid.device()
-                dev.open(vid, pid)
-                payload = bytes.fromhex(hex_cmd)
-                dev.write(payload)
-                # Try with timeout first, fallback to without timeout
-                try:
-                    dev.read(32, timeout=1000)
-                except TypeError:
-                    # Some versions don't support timeout parameter
-                    dev.read(32)
-                dev.close()
-            elif hasattr(hid, 'open'):
-                # Old hidapi API (0.13 and earlier)
-                dev = hid.open(vid, pid)
-                if dev is None:
-                    raise Exception("Failed to open HID device")
-                payload = bytes.fromhex(hex_cmd)
-                dev.write(payload)
-                # Try with timeout first, fallback to without timeout
-                try:
-                    dev.read(32, timeout=1000)
-                except TypeError:
-                    # Some versions don't support timeout parameter
-                    dev.read(32)
-                dev.close()
             else:
-                if status_callback:
-                    status_callback("❌ Unsupported hidapi version", "danger")
-                logging.error("Unsupported hidapi version - no Device, device, or open method")
-                return False
+                # Fallback to creating temporary device
+                vid, pid = self.detect_bs2pro()
+                if vid is None or pid is None:
+                    if status_callback:
+                        status_callback("❌ BS2PRO device not found", "danger")
+                    logging.error("BS2PRO device not found.")
+                    return False
+                
+                # Try different hidapi APIs based on version
+                if hasattr(hid, 'Device'):
+                    # New hidapi API (0.14+)
+                    dev = hid.Device(vid=vid, pid=pid)
+                    payload = bytes.fromhex(hex_cmd)
+                    dev.write(payload)
+                    # Try with timeout first, fallback to without timeout
+                    try:
+                        dev.read(32, timeout=1000)
+                    except TypeError:
+                        # Some versions don't support timeout parameter
+                        dev.read(32)
+                    dev.close()
+                elif hasattr(hid, 'device'):
+                    # hidapi 0.14.0.post4 API (lowercase device)
+                    dev = hid.device()
+                    dev.open(vid, pid)
+                    payload = bytes.fromhex(hex_cmd)
+                    dev.write(payload)
+                    # Try with timeout first, fallback to without timeout
+                    try:
+                        dev.read(32, timeout=1000)
+                    except TypeError:
+                        # Some versions don't support timeout parameter
+                        dev.read(32)
+                    dev.close()
+                elif hasattr(hid, 'open'):
+                    # Old hidapi API (0.13 and earlier)
+                    dev = hid.open(vid, pid)
+                    if dev is None:
+                        raise Exception("Failed to open HID device")
+                    payload = bytes.fromhex(hex_cmd)
+                    dev.write(payload)
+                    # Try with timeout first, fallback to without timeout
+                    try:
+                        dev.read(32, timeout=1000)
+                    except TypeError:
+                        # Some versions don't support timeout parameter
+                        dev.read(32)
+                    dev.close()
+                else:
+                    if status_callback:
+                        status_callback("❌ Unsupported hidapi version", "danger")
+                    logging.error("Unsupported hidapi version - no Device, device, or open method")
+                    return False
                 
             if status_callback:
                 status_callback("✅ Command sent successfully", "success")
@@ -126,6 +144,44 @@ class BS2ProController:
             logging.error(f"HID error: {e}")
             return False
     
+    def _get_shared_device(self):
+        """Get shared HID device for both reading and writing"""
+        with self.device_lock:
+            if self.shared_device is None:
+                try:
+                    vid, pid = self.detect_bs2pro()
+                    if vid is None or pid is None:
+                        return None
+                    
+                    logging.info(f"Creating shared HID device VID={vid:04x}, PID={pid:04x}")
+                    if hasattr(hid, 'Device'):
+                        self.shared_device = hid.Device(vid=vid, pid=pid)
+                    elif hasattr(hid, 'device'):
+                        self.shared_device = hid.device()
+                        self.shared_device.open(vid, pid)
+                    elif hasattr(hid, 'open'):
+                        self.shared_device = hid.open(vid, pid)
+                    else:
+                        return None
+                    
+                    logging.info("Shared HID device created successfully")
+                except Exception as e:
+                    logging.error(f"Error creating shared HID device: {e}")
+                    return None
+            
+            return self.shared_device
+    
+    def _release_shared_device(self):
+        """Release shared device (called when RPM monitoring stops)"""
+        with self.device_lock:
+            if self.shared_device:
+                try:
+                    if hasattr(self.shared_device, 'close'):
+                        self.shared_device.close()
+                    self.shared_device = None
+                    logging.info("Shared HID device released")
+                except Exception as e:
+                    logging.error(f"Error releasing shared HID device: {e}")
     
     def start_rpm_monitoring(self, callback=None):
         """Start monitoring RPM data from the device"""

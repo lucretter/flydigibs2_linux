@@ -27,6 +27,10 @@ class RPMMonitor:
         self.vid = None
         self.pid = None
         
+        # Shared device access
+        self.get_shared_device_func = None
+        self.release_shared_device_func = None
+        
         
     def add_callback(self, callback):
         """Add a callback function to be called when RPM changes"""
@@ -36,6 +40,11 @@ class RPMMonitor:
         """Remove a callback function"""
         if callback in self.callbacks:
             self.callbacks.remove(callback)
+    
+    def set_shared_device_access(self, get_func, release_func):
+        """Set shared device access functions"""
+        self.get_shared_device_func = get_func
+        self.release_shared_device_func = release_func
     
     
     def _notify_callbacks(self, rpm):
@@ -67,6 +76,18 @@ class RPMMonitor:
     
     def _open_device(self):
         """Open HID device for reading"""
+        # Use shared device if available
+        if self.get_shared_device_func:
+            logging.info("Using shared device for RPM monitoring")
+            self.device = self.get_shared_device_func()
+            if self.device:
+                logging.info("Shared device obtained successfully")
+                return True
+            else:
+                logging.warning("Failed to get shared device")
+                return False
+        
+        # Fallback to direct access
         if self.vid is None or self.pid is None:
             return False
             
@@ -107,9 +128,17 @@ class RPMMonitor:
         if self.device:
             logging.info("Closing HID device")
             try:
-                if hasattr(self.device, 'close'):
-                    self.device.close()
-                self.device = None
+                # For shared devices, don't close the device
+                if self.get_shared_device_func:
+                    logging.info("Releasing shared device")
+                    if self.release_shared_device_func:
+                        self.release_shared_device_func()
+                    self.device = None
+                else:
+                    # For direct devices, close them
+                    if hasattr(self.device, 'close'):
+                        self.device.close()
+                    self.device = None
                 logging.info("HID device closed successfully")
             except Exception as e:
                 logging.error(f"Error closing HID device: {e}")
