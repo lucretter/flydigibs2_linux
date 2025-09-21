@@ -66,6 +66,7 @@ jobs:
             --add-data 'bs2pro/udev_manager.py:.' \
             --add-data 'bs2pro/cpu_monitor.py:.' \
             --add-data 'bs2pro/smart_mode.py:.' \
+            --add-data 'bs2pro/rpm_monitor.py:.' \
             --hidden-import=hidapi \
             --hidden-import=hid \
             --hidden-import=hidapi.hidapi \
