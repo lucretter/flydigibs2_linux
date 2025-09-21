@@ -145,17 +145,6 @@ class RPMMonitor:
         else:
             logging.debug("No device to close")
     
-    def _is_device_open(self):
-        """Check if device is open and accessible"""
-        if not self.device:
-            return False
-        
-        try:
-            if hasattr(self.device, 'read'):
-                return True
-            return False
-        except:
-            return False
     
     def _decode_rpm_data(self, data):
         """Decode RPM data from HID report"""

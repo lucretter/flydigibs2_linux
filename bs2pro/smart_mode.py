@@ -5,7 +5,6 @@ Smart Mode Configuration and Management
 import logging
 import json
 import os
-import sys
 
 class SmartModeManager:
     def __init__(self, config_file=None):
@@ -18,7 +17,6 @@ class SmartModeManager:
             self.config_file = config_file
         self.temperature_ranges = []
         self.is_enabled = False
-        self.current_rpm = None
         self.load_config()
     
     def load_config(self):
@@ -68,23 +66,6 @@ class SmartModeManager:
         self.temperature_ranges.sort(key=lambda x: x['min_temp'])
         self.save_config()
     
-    def remove_temperature_range(self, index):
-        """Remove a temperature range by index"""
-        if 0 <= index < len(self.temperature_ranges):
-            del self.temperature_ranges[index]
-            self.save_config()
-    
-    def update_temperature_range(self, index, min_temp, max_temp, rpm, description=""):
-        """Update a temperature range by index"""
-        if 0 <= index < len(self.temperature_ranges):
-            self.temperature_ranges[index] = {
-                "min_temp": min_temp,
-                "max_temp": max_temp,
-                "rpm": rpm,
-                "description": description
-            }
-            self.temperature_ranges.sort(key=lambda x: x['min_temp'])
-            self.save_config()
     
     def get_rpm_for_temperature(self, temperature):
         """Get the appropriate RPM for a given temperature"""

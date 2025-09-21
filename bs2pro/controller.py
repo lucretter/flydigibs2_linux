@@ -204,6 +204,3 @@ class BS2ProController:
         """Add a callback for RPM updates"""
         self.rpm_monitor.add_callback(callback)
     
-    def remove_rpm_callback(self, callback):
-        """Remove a callback for RPM updates"""
-        self.rpm_monitor.remove_callback(callback)

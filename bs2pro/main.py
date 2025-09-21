@@ -42,8 +42,6 @@ except ImportError:
         BS2ProGUI = gui_module.BS2ProGUI
         UdevRulesManager = udev_module.UdevRulesManager
 
-ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
-
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",
     1700: "5aa5260500a406d50000000000000000000000000000000000000000000000",

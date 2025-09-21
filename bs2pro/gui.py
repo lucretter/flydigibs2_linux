@@ -95,10 +95,7 @@ class BS2ProGUI:
         else:
             rpm = int(selected_value)
         
-        def status_callback(msg, style):
-            self.device_status_label.configure(text=msg, text_color=self.get_color(style))
-            self.root.after(2000, self.reset_status_message)
-        success = self.controller.send_command(self.rpm_commands[rpm], status_callback=status_callback)
+        success = self.controller.send_command(self.rpm_commands[rpm], status_callback=self._create_status_callback())
         # Don't update RPM display here - let live monitoring handle it
         self.config_manager.save_setting("last_rpm", rpm)
         if not success:
@@ -107,10 +104,7 @@ class BS2ProGUI:
     def on_rpm_toggle(self):
         state = self.rpm_var.get()
         cmd = self.commands["rpm_on"] if state else self.commands["rpm_off"]
-        def status_callback(msg, style):
-            self.device_status_label.configure(text=msg, text_color=self.get_color(style))
-            self.root.after(2000, self.reset_status_message)
-        success = self.controller.send_command(cmd, status_callback=status_callback)
+        success = self.controller.send_command(cmd, status_callback=self._create_status_callback())
         self.config_manager.save_setting("rpm_indicator", str(state))
         if not success:
             self.device_status_label.configure(text="Failed to toggle RPM indicator", text_color="#dc3545")
@@ -132,10 +126,7 @@ class BS2ProGUI:
             mode = selected_value
         
         cmd = self.commands[f"autostart_{mode.lower()}"]
-        def status_callback(msg, style):
-            self.device_status_label.configure(text=msg, text_color=self.get_color(style))
-            self.root.after(2000, self.reset_status_message)
-        success = self.controller.send_command(cmd, status_callback=status_callback)
+        success = self.controller.send_command(cmd, status_callback=self._create_status_callback())
         self.config_manager.save_setting("autostart_mode", mode)
         if not success:
             self.device_status_label.configure(text="Failed to set autostart mode", text_color="#dc3545")
@@ -143,9 +134,7 @@ class BS2ProGUI:
     def on_start_toggle(self):
         state = self.start_var.get()
         success = True
-        def status_callback(msg, style):
-            self.device_status_label.configure(text=msg, text_color=self.get_color(style))
-            self.root.after(2000, self.reset_status_message)
+        status_callback = self._create_status_callback()
         if state:
             success = self.controller.send_command(self.commands["startwhenpowered_on"], status_callback=status_callback)
         else:
@@ -169,6 +158,13 @@ class BS2ProGUI:
             "light": "#6c757d"
         }
         return color_map.get(style, "#ffffff")
+    
+    def _create_status_callback(self):
+        """Create a status callback function for device status updates"""
+        def status_callback(msg, style):
+            self.device_status_label.configure(text=msg, text_color=self.get_color(style))
+            self.root.after(2000, self.reset_status_message)
+        return status_callback
 
     def setup_widgets(self):
         # Main container with better spacing
@@ -399,7 +395,7 @@ class BS2ProGUI:
         # Footer text
         footer_label = ctk.CTkLabel(
             footer_frame,
-            text="BS2PRO Controller v1.1.4 • Made with ❤️",
+            text="BS2PRO Controller v2.0.0 • Made with ❤️",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
@@ -457,11 +453,7 @@ class BS2ProGUI:
                 self.current_rpm = target_rpm
                 
                 # Send command to device
-                def status_callback(msg, style):
-                    self.device_status_label.configure(text=msg, text_color=self.get_color(style))
-                    self.root.after(2000, self.reset_status_message)
-                
-                success = self.controller.send_command(self.rpm_commands[target_rpm], status_callback=status_callback)
+                success = self.controller.send_command(self.rpm_commands[target_rpm], status_callback=self._create_status_callback())
                 
                 if success:
                     # Update combobox selection
@@ -580,9 +572,6 @@ class BS2ProGUI:
         
         # Auto-adjust size after content is loaded
         dialog.after(200, lambda: self.auto_adjust_dialog_size(dialog))
-        
-        # Initialize range data storage
-        self.range_data_storage = []
         
         # Main frame
         main_frame = ctk.CTkFrame(dialog)
@@ -841,82 +830,7 @@ class BS2ProGUI:
             logging.error(f"Error saving smart mode config: {e}")
             messagebox.showerror("Error", f"Failed to save configuration: {e}")
     
-    def save_smart_mode_config(self, dialog):
-        """Save smart mode configuration"""
-        try:
-            # Clear existing ranges
-            self.smart_mode_manager.temperature_ranges = []
-            
-            # Collect data from widgets before destroying dialog
-            ranges_data = []
-            for i, widget in enumerate(self.range_widgets):
-                try:
-                    # Check if widget still exists before accessing
-                    if not widget['min_entry'].winfo_exists():
-                        logging.warning(f"Widget {i} no longer exists, skipping")
-                        continue
-                    
-                    min_temp = float(widget['min_entry'].get())
-                    max_temp = float(widget['max_entry'].get())
-                    rpm = int(widget['rpm_entry'].get())
-                    description = widget['desc_entry'].get()
-                    
-                    # Validate range
-                    if min_temp >= max_temp:
-                        messagebox.showerror("Error", f"Range {i+1}: Min temperature must be less than max temperature")
-                        return
-                    
-                    if rpm < 1000 or rpm > 3000:
-                        messagebox.showerror("Error", f"Range {i+1}: RPM must be between 1000 and 3000")
-                        return
-                    
-                    ranges_data.append({
-                        'min_temp': min_temp,
-                        'max_temp': max_temp,
-                        'rpm': rpm,
-                        'description': description
-                    })
-                except tk.TclError as tcl_err:
-                    logging.warning(f"TclError accessing widget {i}: {tcl_err}")
-                    continue
-                except ValueError as ve:
-                    messagebox.showerror("Error", f"Range {i+1}: Invalid value - {ve}")
-                    return
-                except Exception as e:
-                    logging.warning(f"Error accessing widget {i}: {e}")
-                    continue
-            
-            # Check if we have any valid ranges
-            if not ranges_data:
-                messagebox.showerror("Error", "No valid temperature ranges found. Please add at least one range.")
-                return
-            
-            # Add ranges to smart mode manager
-            for range_data in ranges_data:
-                self.smart_mode_manager.add_temperature_range(
-                    range_data['min_temp'],
-                    range_data['max_temp'],
-                    range_data['rpm'],
-                    range_data['description']
-                )
-            
-            # Save configuration
-            self.smart_mode_manager.save_config()
-            
-            # Close dialog
-            dialog.destroy()
-            
-            # Show success message
-            messagebox.showinfo("Success", "Smart mode configuration saved!")
-            
-        except Exception as e:
-            logging.error(f"Error saving smart mode config: {e}")
-            messagebox.showerror("Error", f"Failed to save configuration: {e}")
     
-    def toggle_smart_mode(self):
-        """Toggle smart mode (for tray menu)"""
-        self.smart_mode_var.set(not self.smart_mode_var.get())
-        self.on_smart_mode_toggle()
     
     def on_closing(self):
         """Handle window closing event (X button)"""
