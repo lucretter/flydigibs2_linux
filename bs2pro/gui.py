@@ -5,7 +5,10 @@ import sys
 # Locate bundled msgcat.tcl
 base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
 msgcat_path = os.path.join(base_path, 'tcl', 'msgcat.tcl')
-
+root = tk.Tk()
+if os.path.exists(msgcat_path):
+    root.tk.eval(f'source "{msgcat_path}"')
+root.destroy()
 import ttkbootstrap as tb 
 from ttkbootstrap.constants import *
 import logging
