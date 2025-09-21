@@ -492,13 +492,19 @@ class BS2ProGUI:
         dialog.title("Smart Mode Configuration")
         dialog.geometry("600x500")
         dialog.transient(self.root)
-        dialog.grab_set()
         
         # Center the dialog
         dialog.update_idletasks()
         x = (dialog.winfo_screenwidth() // 2) - (600 // 2)
         y = (dialog.winfo_screenheight() // 2) - (500 // 2)
         dialog.geometry(f"600x500+{x}+{y}")
+        
+        # Make sure dialog is visible before grabbing focus
+        dialog.lift()
+        dialog.focus_force()
+        
+        # Use after() to ensure dialog is fully rendered before grabbing focus
+        dialog.after(100, lambda: dialog.grab_set())
         
         # Main frame
         main_frame = ctk.CTkFrame(dialog)

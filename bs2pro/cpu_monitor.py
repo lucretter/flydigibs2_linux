@@ -36,6 +36,10 @@ class CPUMonitor:
         """Get current CPU temperature"""
         try:
             # Try different methods to get CPU temperature
+            temp = self._try_hwmon()
+            if temp is not None:
+                return temp
+                
             temp = self._try_thermal_zone()
             if temp is not None:
                 return temp
@@ -70,8 +74,40 @@ class CPUMonitor:
                     with open(thermal_file, 'r') as f:
                         temp_millicelsius = int(f.read().strip())
                         temp_celsius = temp_millicelsius / 1000.0
-                        if 20 <= temp_celsius <= 100:  # Reasonable temperature range
+                        # Skip thermal_zone0 as it's often not the CPU temperature
+                        if thermal_file != "/sys/class/thermal/thermal_zone0/temp" and 20 <= temp_celsius <= 100:
                             return temp_celsius
+        except Exception:
+            pass
+        return None
+    
+    def _try_hwmon(self):
+        """Try to read from hwmon (Linux) - most reliable for CPU temperature"""
+        try:
+            hwmon_path = "/sys/class/hwmon"
+            if not os.path.exists(hwmon_path):
+                return None
+                
+            # Look for CPU temperature sensors
+            cpu_temps = []
+            for hwmon_dir in os.listdir(hwmon_path):
+                if hwmon_dir.startswith('hwmon'):
+                    hwmon_full_path = os.path.join(hwmon_path, hwmon_dir)
+                    for temp_file in os.listdir(hwmon_full_path):
+                        if temp_file.startswith('temp') and temp_file.endswith('_input'):
+                            temp_file_path = os.path.join(hwmon_full_path, temp_file)
+                            try:
+                                with open(temp_file_path, 'r') as f:
+                                    temp_raw = f.read().strip()
+                                    temp_celsius = float(temp_raw) / 1000.0
+                                    if 20 <= temp_celsius <= 100:  # Reasonable temperature range
+                                        cpu_temps.append(temp_celsius)
+                            except Exception:
+                                continue
+            
+            if cpu_temps:
+                # Return the highest temperature (likely CPU)
+                return max(cpu_temps)
         except Exception:
             pass
         return None
