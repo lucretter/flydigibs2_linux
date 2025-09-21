@@ -25,15 +25,14 @@ class TrayManager:
         # Check for notification support
         self._check_notification_support()
         
-        # Initialize native tray if available
-        if self.tray_available:
-            try:
-                from native_tray_manager import NativeTrayManager
-                self.native_tray = NativeTrayManager(root, gui_instance)
-                logging.info("Native tray manager initialized")
-            except ImportError as e:
-                logging.warning(f"Could not load native tray manager: {e}")
-                self.tray_available = False
+        # Always use simple tray manager for now (more reliable)
+        try:
+            from simple_tray_manager import SimpleTrayManager
+            self.native_tray = SimpleTrayManager(root, gui_instance)
+            logging.info("Simple tray manager initialized")
+        except ImportError as e:
+            logging.warning(f"Could not load simple tray manager: {e}")
+            self.tray_available = False
         
         # Set up signal handlers for tray communication
         self._setup_signal_handlers()
@@ -41,30 +40,10 @@ class TrayManager:
         logging.info(f"Tray manager initialized - tray: {self.tray_available}, notifications: {self.notification_available}")
     
     def _check_tray_support(self):
-        """Check if we can use native system tray"""
-        try:
-            # Check for ayatana-appindicator first (newer)
-            result = subprocess.run(['pkg-config', '--exists', 'ayatana-appindicator-0.1'], 
-                                 capture_output=True, timeout=5)
-            if result.returncode == 0:
-                self.tray_available = True
-                logging.info("ayatana-appindicator available")
-                return
-            
-            # Fallback to libappindicator
-            result = subprocess.run(['pkg-config', '--exists', 'libappindicator-0.1'], 
-                                 capture_output=True, timeout=5)
-            if result.returncode == 0:
-                self.tray_available = True
-                logging.info("libappindicator available")
-                return
-                
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            pass
-        
-        # Fallback: we can always minimize to taskbar
+        """Check if we can use tray functionality"""
+        # We can always use the simple tray approach
         self.tray_available = True
-        logging.info("Using fallback tray (taskbar only)")
+        logging.info("Simple tray support available")
     
     def _check_notification_support(self):
         """Check if we can send system notifications"""
