@@ -278,8 +278,10 @@ class RPMMonitor:
                     
                 except Exception as e:
                     logging.debug(f"Error reading from device: {e}")
-                    # Device might have disconnected, try to reconnect
-                    self._close_device()
+                    # For shared devices, don't close the device on read errors
+                    if not self.open_device_func:
+                        # Only close device if it's not shared
+                        self._close_device()
                     time.sleep(1)
                     
             except Exception as e:
