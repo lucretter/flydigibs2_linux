@@ -2,6 +2,56 @@ import os
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
+import tkinter as tk
+
+def initialize_msgcat():
+    """Initialize msgcat commands before any ttkbootstrap imports"""
+    try:
+        # Create a temporary root to initialize Tcl interpreter
+        temp_root = tk.Tk()
+        temp_root.withdraw()  # Hide the window
+        
+        # Check if msgcat commands exist, if not create stubs
+        try:
+            temp_root.tk.call('::msgcat::mcmset', 'en', {})
+        except tk.TclError:
+            # msgcat not available, create stub implementations
+            temp_root.tk.eval('''
+                namespace eval ::msgcat {
+                    proc mcmset {locale dict} {
+                        # Stub implementation
+                        return
+                    }
+                    proc mcset {locale key {value ""}} {
+                        # Stub implementation
+                        return $value
+                    }
+                    proc mc {key args} {
+                        # Stub implementation - just return the key
+                        return $key
+                    }
+                    proc mcpreferences {} {
+                        # Return default locale
+                        return [list en]
+                    }
+                    proc mclocale {{locale ""}} {
+                        # Return or set locale
+                        if {$locale eq ""} {
+                            return en
+                        }
+                        return en
+                    }
+                }
+            ''')
+            logging.info("Created msgcat stub implementations")
+        
+        temp_root.destroy()
+        
+    except Exception as e:
+        logging.warning(f"Failed to initialize msgcat: {e}")
+
+# Initialize msgcat BEFORE any other imports that might use ttkbootstrap
+initialize_msgcat()
 
 # Entry point: wire up controller, config, and GUI
 from controller import BS2ProController
