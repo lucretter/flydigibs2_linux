@@ -56,15 +56,27 @@ jobs:
 
       - name: Build binary
         run: |
-          pyinstaller --noconfirm --onefile --name bs2pro_controller \
-            --hidden-import=PIL._tkinter_finder \
-            --hidden-import=hidapi \
-            --hidden-import=ttkbootstrap \
-            --collect-data ttkbootstrap \
-            --add-data "bs2pro/icon.png:." \
-            --add-data "$(python3 -c 'import tkinter; print(tkinter.__file__.replace("__init__.py", "tcl"))')/msgcat.tcl:tcl" \
-            bs2pro/main.py
-
+          TCL_MSGCAT=$(python3 -c 'import tkinter; import os; d=os.path.join(os.path.dirname(tkinter.__file__), "tcl", "msgcat.tcl"); print(d if os.path.exists(d) else "")')
+          if [ -z "$TCL_MSGCAT" ]; then
+            echo "msgcat.tcl not found, skipping add-data"
+            pyinstaller --noconfirm --onefile --name bs2pro_controller \
+              --hidden-import=PIL._tkinter_finder \
+              --hidden-import=hidapi \
+              --hidden-import=ttkbootstrap \
+              --collect-data ttkbootstrap \
+              --add-data "bs2pro/icon.png:." \
+              bs2pro/main.py
+          else
+            echo "Including msgcat.tcl from $TCL_MSGCAT"
+            pyinstaller --noconfirm --onefile --name bs2pro_controller \
+              --hidden-import=PIL._tkinter_finder \
+              --hidden-import=hidapi \
+              --hidden-import=ttkbootstrap \
+              --collect-data ttkbootstrap \
+              --add-data "bs2pro/icon.png:." \
+              --add-data "$TCL_MSGCAT:tcl" \
+              bs2pro/main.py
+          fi
 
       - name: Build .deb with dependencies
         run: |
