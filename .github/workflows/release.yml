@@ -60,10 +60,16 @@ jobs:
             --hidden-import=PIL._tkinter_finder \
             --hidden-import=hidapi \
             --hidden-import=ttkbootstrap \
+            --hidden-import=tcl_init \
             --collect-data ttkbootstrap \
             --exclude-module=tkinter.test \
             --exclude-module=test \
+            --additional-hooks-dir=. \
             --add-data "bs2pro/icon.png:." \
+            --add-data "bs2pro/tcl:./tcl" \
+            --add-binary "/usr/lib/tcl8.6/msgcat1.7.1:./tcl8.6/msgcat1.7.1" \
+            --add-binary "/usr/lib/tcl8.6:./tcl8.6" \
+            --add-binary "/usr/lib/tk8.6:./tk8.6" \
             bs2pro/main.py
 
       - name: Build .deb with dependencies

@@ -11,11 +11,43 @@ def initialize_msgcat():
         temp_root = tk.Tk()
         temp_root.withdraw()  # Hide the window
         
-        # Check if msgcat commands exist, if not create stubs
+        # Set up Tcl library paths for packaged executable
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            base_path = sys._MEIPASS
+            tcl_path = os.path.join(base_path, 'tcl8.6')
+            tk_path = os.path.join(base_path, 'tk8.6')
+            
+            # Add Tcl/Tk library paths
+            temp_root.tk.eval(f'set auto_path [linsert $auto_path 0 "{tcl_path}" "{tk_path}"]')
+            
+            # Try to load msgcat from the included files
+            msgcat_path = os.path.join(base_path, 'tcl', 'msgcat1.7.1')
+            if os.path.exists(msgcat_path):
+                temp_root.tk.eval(f'source [file join "{msgcat_path}" "msgcat.tcl"]')
+                logging.info("Loaded msgcat from packaged files")
+            else:
+                # Fallback to system msgcat
+                try:
+                    temp_root.tk.eval('package require msgcat')
+                    logging.info("Loaded system msgcat")
+                except tk.TclError:
+                    raise tk.TclError("msgcat not available")
+        else:
+            # Running as script, try to load system msgcat
+            try:
+                temp_root.tk.eval('package require msgcat')
+                logging.info("Loaded system msgcat")
+            except tk.TclError:
+                raise tk.TclError("msgcat not available")
+        
+        # Test if msgcat is working
         try:
             temp_root.tk.call('::msgcat::mcmset', 'en', {})
-        except tk.TclError:
-            # msgcat not available, create stub implementations
+            logging.info("msgcat initialized successfully")
+        except tk.TclError as e:
+            logging.warning(f"msgcat test failed: {e}")
+            # Create stub implementations as fallback
             temp_root.tk.eval('''
                 namespace eval ::msgcat {
                     proc mcmset {locale dict} {
@@ -49,8 +81,26 @@ def initialize_msgcat():
         
     except Exception as e:
         logging.warning(f"Failed to initialize msgcat: {e}")
+        # Create a minimal fallback
+        try:
+            temp_root = tk.Tk()
+            temp_root.withdraw()
+            temp_root.tk.eval('''
+                namespace eval ::msgcat {
+                    proc mcmset {locale dict} { return }
+                    proc mcset {locale key {value ""}} { return $value }
+                    proc mc {key args} { return $key }
+                    proc mcpreferences {} { return [list en] }
+                    proc mclocale {{locale ""}} { return en }
+                }
+            ''')
+            temp_root.destroy()
+            logging.info("Created minimal msgcat fallback")
+        except:
+            pass
 
-# Initialize msgcat BEFORE any other imports that might use ttkbootstrap
+# Initialize Tcl environment BEFORE any other imports that might use ttkbootstrap
+import tcl_init  # This sets up the Tcl environment
 initialize_msgcat()
 
 # Entry point: wire up controller, config, and GUI
