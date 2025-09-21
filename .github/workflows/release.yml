@@ -48,8 +48,6 @@ jobs:
           Name=BS2PRO Controller
           Comment=Controller for BS2PRO devices
           Exec=/usr/bin/bs2pro_controller
-          Icon=system-run
-          Exec=bs2pro_controller
           Icon=/usr/share/pixmaps/bs2pro-controller.png
           Categories=Utility;
           Terminal=false
@@ -64,6 +62,7 @@ jobs:
             --hidden-import=ttkbootstrap \
             --collect-data ttkbootstrap \
             --add-data "bs2pro/icon.png:." \
+            --add-data "$(python3 -c 'import tkinter; print(tkinter.__file__.replace("__init__.py", "tcl"))')/msgcat.tcl:tcl" \
             bs2pro/main.py
 
 
@@ -88,6 +87,8 @@ jobs:
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "hidapi" \
             -d "python3-tkinter" \
+            -d "tk" \
+            -d "tcl" \
             --description "Controller for BS2PRO devices" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
