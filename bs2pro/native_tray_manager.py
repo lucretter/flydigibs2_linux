@@ -104,8 +104,20 @@ def main():
     try:
         import gi
         gi.require_version('Gtk', '3.0')
-        gi.require_version('AppIndicator3', '0.1')
-        from gi.repository import Gtk, AppIndicator3
+        
+        # Try ayatana-appindicator first, then fallback to libappindicator
+        try:
+            gi.require_version('AyatanaAppIndicator3', '0.1')
+            from gi.repository import Gtk, AyatanaAppIndicator3 as AppIndicator3
+            print("Using ayatana-appindicator")
+        except ValueError:
+            try:
+                gi.require_version('AppIndicator3', '0.1')
+                from gi.repository import Gtk, AppIndicator3
+                print("Using libappindicator")
+            except ValueError:
+                print("Neither ayatana-appindicator nor libappindicator available")
+                sys.exit(1)
         
         # Create the indicator
         indicator = AppIndicator3.Indicator.new(

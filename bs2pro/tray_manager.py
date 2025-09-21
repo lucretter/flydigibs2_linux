@@ -43,19 +43,20 @@ class TrayManager:
     def _check_tray_support(self):
         """Check if we can use native system tray"""
         try:
-            # Check for libappindicator or ayatana-appindicator
-            result = subprocess.run(['pkg-config', '--exists', 'libappindicator-0.1'], 
-                                 capture_output=True, timeout=5)
-            if result.returncode == 0:
-                self.tray_available = True
-                logging.info("libappindicator available")
-                return
-            
+            # Check for ayatana-appindicator first (newer)
             result = subprocess.run(['pkg-config', '--exists', 'ayatana-appindicator-0.1'], 
                                  capture_output=True, timeout=5)
             if result.returncode == 0:
                 self.tray_available = True
                 logging.info("ayatana-appindicator available")
+                return
+            
+            # Fallback to libappindicator
+            result = subprocess.run(['pkg-config', '--exists', 'libappindicator-0.1'], 
+                                 capture_output=True, timeout=5)
+            if result.returncode == 0:
+                self.tray_available = True
+                logging.info("libappindicator available")
                 return
                 
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
