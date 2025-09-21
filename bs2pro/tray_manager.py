@@ -20,11 +20,12 @@ class TrayManager:
             import pystray
             from PIL import Image
             self.pystray = pystray
-            self.PIL = Image
+            self.Image = Image
             self.tray_available = True
-        except ImportError:
+            logging.info("System tray dependencies loaded successfully")
+        except ImportError as e:
             self.tray_available = False
-            logging.warning("pystray not available - system tray functionality disabled")
+            logging.warning(f"pystray not available - system tray functionality disabled: {e}")
     
     def create_tray_icon(self):
         """Create system tray icon"""
@@ -61,12 +62,14 @@ class TrayManager:
             # Try to load the app icon
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
             if os.path.exists(icon_path):
-                return self.PIL.Image.open(icon_path)
-        except Exception:
-            pass
+                logging.info(f"Loading app icon from: {icon_path}")
+                return self.Image.open(icon_path)
+        except Exception as e:
+            logging.warning(f"Could not load app icon: {e}")
         
         # Create a simple colored square as fallback
-        return self.PIL.Image.new('RGB', (64, 64), color='blue')
+        logging.info("Creating fallback icon")
+        return self.Image.new('RGB', (64, 64), color='blue')
     
     def show_window(self, icon=None, item=None):
         """Show the main window"""
