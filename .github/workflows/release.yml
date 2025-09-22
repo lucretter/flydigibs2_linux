@@ -46,19 +46,17 @@ jobs:
           mkdir -p package-files/opt/bs2pro-controller
           mkdir -p package-files/usr/bin
           
-          # Extract wheel to installation directory
-          pip install --target package-files/opt/bs2pro-controller dist/*.whl
+          # Copy the bs2pro module directly
+          cp -r bs2pro/ package-files/opt/bs2pro-controller/
+          
+          # Install Python dependencies to the target directory
+          pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi customtkinter Pillow ttkbootstrap --no-deps
           
           # Create wrapper script that uses system Python and Qt
           cat > package-files/usr/bin/bs2pro_controller << 'EOF'
           #!/bin/bash
           export PYTHONPATH="/opt/bs2pro-controller:$PYTHONPATH"
-          exec python3 -c "
-          import sys
-          sys.path.insert(0, '/opt/bs2pro-controller')
-          from bs2pro.main_native import main
-          main()
-          " "$@"
+          exec python3 /opt/bs2pro-controller/bs2pro/main_native.py "$@"
           EOF
           chmod +x package-files/usr/bin/bs2pro_controller
 
@@ -86,7 +84,6 @@ jobs:
           fpm -s dir -t deb -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "python3" \
             -d "python3-pyqt6" \
-            -d "python3-hidapi" \
             -d "libhidapi-hidraw0" \
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
