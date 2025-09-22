@@ -936,7 +936,7 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
         
     # Set application properties
     app.setApplicationName("BS2PRO Controller")
-    app.setApplicationVersion("2.3.1")
+    app.setApplicationVersion("2.4.0")
     app.setOrganizationName("BS2PRO")
     
     # Debug: Print current style information
