@@ -35,7 +35,32 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller hidapi customtkinter PyQt6  # Updated dependencies for native GUI
+          pip install build setuptools wheel
+
+      - name: Build Python package
+        run: |
+          python -m build --wheel
+
+      - name: Create installation directory structure
+        run: |
+          mkdir -p package-files/opt/bs2pro-controller
+          mkdir -p package-files/usr/bin
+          
+          # Extract wheel to installation directory
+          pip install --target package-files/opt/bs2pro-controller dist/*.whl
+          
+          # Create wrapper script that uses system Python and Qt
+          cat > package-files/usr/bin/bs2pro_controller << 'EOF'
+          #!/bin/bash
+          export PYTHONPATH="/opt/bs2pro-controller:$PYTHONPATH"
+          exec python3 -c "
+          import sys
+          sys.path.insert(0, '/opt/bs2pro-controller')
+          from bs2pro.main_native import main
+          main()
+          " "$@"
+          EOF
+          chmod +x package-files/usr/bin/bs2pro_controller
 
       - name: Create desktop file
         run: |
@@ -56,102 +81,44 @@ jobs:
           StartupNotify=false
           EOF
 
-      - name: Build binary
-        run: |
-          # Build PyInstaller command with conditional binary inclusion
-          PYINSTALLER_CMD="pyinstaller --onefile --name bs2pro_controller \
-            --add-data 'bs2pro/icon.png:.' \
-            --add-data 'bs2pro/controller.py:.' \
-            --add-data 'bs2pro/config.py:.' \
-            --add-data 'bs2pro/gui_qt.py:.' \
-            --add-data 'bs2pro/qt_tray_manager.py:.' \
-            --add-data 'bs2pro/udev_manager.py:.' \
-            --add-data 'bs2pro/cpu_monitor.py:.' \
-            --add-data 'bs2pro/smart_mode.py:.' \
-            --add-data 'bs2pro/rpm_monitor.py:.' \
-            --hidden-import=hidapi \
-            --hidden-import=hid \
-            --hidden-import=hidapi.hidapi \
-            --hidden-import=customtkinter \
-            --hidden-import=PyQt6 \
-            --hidden-import=PyQt6.QtCore \
-            --hidden-import=PyQt6.QtGui \
-            --hidden-import=PyQt6.QtWidgets \
-            --hidden-import=rpm_monitor \
-            --hidden-import=bs2pro.rpm_monitor \
-            --hidden-import=bs2pro.controller \
-            --hidden-import=bs2pro.gui_qt \
-            --hidden-import=bs2pro.config \
-            --hidden-import=bs2pro.qt_tray_manager \
-            --hidden-import=bs2pro.udev_manager \
-            --hidden-import=bs2pro.cpu_monitor \
-            --hidden-import=bs2pro.smart_mode \
-            --collect-all=hidapi \
-            --collect-data=hidapi \
-            --collect-submodules=hidapi \
-            --collect-all=customtkinter \
-            --collect-data=customtkinter \
-            --collect-all=PyQt6 \
-            --collect-all=bs2pro"
-          
-          # Add Qt6 style plugins if they exist (for native theming support)
-          if [ -d "/usr/lib/x86_64-linux-gnu/qt6/plugins/styles" ]; then
-            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-data '/usr/lib/x86_64-linux-gnu/qt6/plugins/styles:PyQt6/Qt6/plugins/styles'"
-            echo "Added Ubuntu Qt6 style plugins"
-          elif [ -d "/usr/lib64/qt6/plugins/styles" ]; then
-            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-data '/usr/lib64/qt6/plugins/styles:PyQt6/Qt6/plugins/styles'"
-            echo "Added Fedora Qt6 style plugins"
-          elif [ -d "/usr/lib/qt6/plugins/styles" ]; then
-            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-data '/usr/lib/qt6/plugins/styles:PyQt6/Qt6/plugins/styles'"
-            echo "Added generic Qt6 style plugins"
-          else
-            echo "No Qt6 style plugins found - using bundled PyQt6 styles only"
-          fi
-          
-          # Add HID library binaries if they exist
-          if [ -f "/usr/lib/x86_64-linux-gnu/libhidapi-hidraw.so.0" ]; then
-            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-binary '/usr/lib/x86_64-linux-gnu/libhidapi-hidraw.so.0:.'"
-          fi
-          
-          if [ -f "/usr/lib/x86_64-linux-gnu/libhidapi-libusb.so.0" ]; then
-            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-binary '/usr/lib/x86_64-linux-gnu/libhidapi-libusb.so.0:.'"
-          fi
-          
-          # Add the main script and execute
-          PYINSTALLER_CMD="$PYINSTALLER_CMD bs2pro/main_native.py"  # Updated to use new native main script
-          
-          echo "Running: $PYINSTALLER_CMD"
-          eval $PYINSTALLER_CMD
-
       - name: Build .deb with dependencies
         run: |
           fpm -s dir -t deb -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
+            -d "python3" \
+            -d "python3-pyqt6" \
+            -d "python3-hidapi" \
             -d "libhidapi-hidraw0" \
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
-            -d "libqt6gui6" \
-            --description "Controller for BS2PRO devices with native GUI support (PyQt6 with cross-desktop theming)" \
+            -d "qt6-qpa-plugins" \
+            -d "qt6-style-plugins | kde-style-breeze" \
+            --description "Controller for BS2PRO devices with native Qt6 GUI and cross-desktop theming" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
             --category "utils" \
-            dist/bs2pro_controller=/usr/bin/bs2pro_controller \
+            package-files/opt/bs2pro-controller=/opt/ \
+            package-files/usr/bin/bs2pro_controller=/usr/bin/ \
             package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/ \
-            package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/bs2pro-controller.png
+            package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/
 
       - name: Build .rpm with dependencies
         run: |
-          # Build RPM with basic dependencies (PyQt6 will be bundled in the executable)
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
+            -d "python3" \
+            -d "python3-qt6" \
+            -d "python3-hidapi" \
             -d "hidapi" \
             -d "python3-tkinter" \
-            -d "libQt6Gui6" \
-            --description "Controller for BS2PRO devices with native GUI support (PyQt6 with cross-desktop theming)" \
+            -d "qt6-qtbase" \
+            -d "breeze-icon-theme" \
+            --description "Controller for BS2PRO devices with native Qt6 GUI and cross-desktop theming" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
             --category "Applications/System" \
-            dist/bs2pro_controller=/usr/bin/bs2pro_controller \
+            package-files/opt/bs2pro-controller=/opt/ \
+            package-files/usr/bin/bs2pro_controller=/usr/bin/ \
             package-files/usr/share/applications/bs2pro-controller.desktop=/usr/share/applications/ \
-            package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/bs2pro-controller.png
+            package-files/usr/share/pixmaps/bs2pro-controller.png=/usr/share/pixmaps/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
