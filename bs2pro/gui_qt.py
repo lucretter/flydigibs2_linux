@@ -896,10 +896,19 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
     # Force Qt to use X11 instead of Wayland for better theme support
     os.environ['QT_QPA_PLATFORM'] = 'xcb'
     
-    # Set Qt plugin paths - detect distribution-specific paths
+    # Set Qt plugin paths - detect distribution-specific paths and bundled paths
     qt_plugin_paths = []
     
-    # Common Qt6 plugin paths for different distributions
+    # Check if running from PyInstaller bundle and add bundled Qt plugins first
+    import sys
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # Running from PyInstaller bundle
+        bundled_qt_plugins = os.path.join(sys._MEIPASS, 'PyQt6', 'Qt6', 'plugins')
+        if os.path.exists(bundled_qt_plugins):
+            qt_plugin_paths.append(bundled_qt_plugins)
+            print(f"🔌 Found bundled Qt plugins: {bundled_qt_plugins}")
+    
+    # Common Qt6 plugin paths for different distributions (fallback)
     potential_paths = [
         '/usr/lib64/qt6/plugins',           # Fedora, RHEL, CentOS, openSUSE
         '/usr/lib/x86_64-linux-gnu/qt6/plugins',  # Ubuntu, Debian
@@ -936,7 +945,7 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
         
     # Set application properties
     app.setApplicationName("BS2PRO Controller")
-    app.setApplicationVersion("2.3.0")
+    app.setApplicationVersion("2.3.1")
     app.setOrganizationName("BS2PRO")
     
     # Debug: Print current style information
