@@ -28,8 +28,7 @@ jobs:
           sudo apt-get install -y \
             ruby ruby-dev build-essential \
             libhidapi-hidraw0 libhidapi-libusb0 \
-            qt6-base-dev kf6-breeze-icon-theme \
-            kde-style-breeze kde-style-oxygen-qt6
+            qt6-base-dev
           sudo gem install --no-document fpm
 
 
@@ -98,6 +97,15 @@ jobs:
           # Add Qt6 style plugins if they exist (for native theming support)
           if [ -d "/usr/lib/x86_64-linux-gnu/qt6/plugins/styles" ]; then
             PYINSTALLER_CMD="$PYINSTALLER_CMD --add-data '/usr/lib/x86_64-linux-gnu/qt6/plugins/styles:PyQt6/Qt6/plugins/styles'"
+            echo "Added Ubuntu Qt6 style plugins"
+          elif [ -d "/usr/lib64/qt6/plugins/styles" ]; then
+            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-data '/usr/lib64/qt6/plugins/styles:PyQt6/Qt6/plugins/styles'"
+            echo "Added Fedora Qt6 style plugins"
+          elif [ -d "/usr/lib/qt6/plugins/styles" ]; then
+            PYINSTALLER_CMD="$PYINSTALLER_CMD --add-data '/usr/lib/qt6/plugins/styles:PyQt6/Qt6/plugins/styles'"
+            echo "Added generic Qt6 style plugins"
+          else
+            echo "No Qt6 style plugins found - using bundled PyQt6 styles only"
           fi
           
           # Add HID library binaries if they exist
@@ -121,8 +129,7 @@ jobs:
             -d "libhidapi-hidraw0" \
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
-            -d "qt6-base-dev | libqt6gui6" \
-            -d "kf6-breeze-icon-theme" \
+            -d "libqt6gui6" \
             --description "Controller for BS2PRO devices with native GUI support (PyQt6 with cross-desktop theming)" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
@@ -137,8 +144,7 @@ jobs:
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "hidapi" \
             -d "python3-tkinter" \
-            -d "qt6-qtbase | libQt6Gui6" \
-            -d "kf6-breeze-icon-theme" \
+            -d "libQt6Gui6" \
             --description "Controller for BS2PRO devices with native GUI support (PyQt6 with cross-desktop theming)" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
