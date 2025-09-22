@@ -42,9 +42,8 @@ class BS2ProGUI:
         self.root = ctk.CTk()
         self.root.title("BS2PRO Controller")
         
-        # Set minimum size and auto-detect optimal size
-        self.root.minsize(500, 700)
-        self.root.geometry("600x750")
+        # Set window to be compact but resizable
+        self.root.geometry("400x300")
         self.root.resizable(True, True)
         
         # Set window icon if provided
@@ -75,7 +74,7 @@ class BS2ProGUI:
         # Start RPM monitoring
         self.controller.start_rpm_monitoring()
         
-        # Center window after widgets are created
+        # Center window after widgets are created with proper sizing
         self.root.after(100, self.center_window)
         
         # Handle window close event
@@ -88,16 +87,16 @@ class BS2ProGUI:
         self.root.mainloop()
 
     def center_window(self):
-        """Center the window on the screen"""
+        """Center the window on the screen and size to content"""
         self.root.update_idletasks()
         
         # Get the actual window size after widgets are rendered
         width = self.root.winfo_reqwidth()
         height = self.root.winfo_reqheight()
         
-        # Ensure minimum size
-        width = max(width, 600)
-        height = max(height, 750)
+        # Ensure minimum width and appropriate height that shows all content
+        width = max(width, 400)
+        height = max(height, 290)  # Enough to show all content without excessive empty space
         
         # Calculate center position
         screen_width = self.root.winfo_screenwidth()
@@ -185,7 +184,7 @@ class BS2ProGUI:
         # Don't update RPM display here - let live monitoring handle it
         self.config_manager.save_setting("last_rpm", rpm)
         if not success:
-            self.device_status_label.configure(text=f"Failed to set RPM: {rpm}", text_color="#dc3545")
+            self.status_label.configure(text=f"Failed to set RPM: {rpm}", text_color="#dc3545")
 
     def on_rpm_toggle(self):
         state = self.rpm_var.get()
@@ -193,13 +192,13 @@ class BS2ProGUI:
         success = self.controller.send_command(cmd, status_callback=self._create_status_callback())
         self.config_manager.save_setting("rpm_indicator", str(state))
         if not success:
-            self.device_status_label.configure(text="Failed to toggle RPM indicator", text_color="#dc3545")
+            self.status_label.configure(text="Failed to toggle RPM indicator", text_color="#dc3545")
 
     def on_rpm_update(self, rpm):
         """Callback for real-time RPM updates from the device"""
         try:
             # Update the RPM display with real-time data
-            self.rpm_display_label.configure(text=f"Current Speed: {rpm} RPM")
+            self.rpm_display_label.configure(text=f"Current: {rpm} RPM")
             logging.info(f"RPM updated from device: {rpm}")
         except Exception as e:
             logging.error(f"Error updating RPM display: {e}")
@@ -215,7 +214,7 @@ class BS2ProGUI:
         success = self.controller.send_command(cmd, status_callback=self._create_status_callback())
         self.config_manager.save_setting("autostart_mode", mode)
         if not success:
-            self.device_status_label.configure(text="Failed to set autostart mode", text_color="#dc3545")
+            self.status_label.configure(text="Failed to set autostart mode", text_color="#dc3545")
 
     def on_start_toggle(self):
         state = self.start_var.get()
@@ -229,7 +228,7 @@ class BS2ProGUI:
                     success = False
         self.config_manager.save_setting("start_when_powered", str(state))
         if not success:
-            self.device_status_label.configure(text="Failed to toggle start when powered", text_color="#dc3545")
+            self.status_label.configure(text="Failed to toggle start when powered", text_color="#dc3545")
 
     def reset_status_message(self):
         self.update_device_status()
@@ -248,14 +247,14 @@ class BS2ProGUI:
     def _create_status_callback(self):
         """Create a status callback function for device status updates"""
         def status_callback(msg, style):
-            self.device_status_label.configure(text=msg, text_color=self.get_color(style))
+            self.status_label.configure(text=msg, text_color=self.get_color(style))
             self.root.after(2000, self.reset_status_message)
         return status_callback
 
     def setup_widgets(self):
-        # Main container with better spacing
+        # Main container with proper spacing
         self.main_frame = ctk.CTkFrame(self.root)
-        self.main_frame.pack(fill="both", expand=True, padx=25, pady=25)
+        self.main_frame.pack(fill="both", expand=True, padx=6, pady=6)
         
         # Header section
         self.create_header()
@@ -276,181 +275,198 @@ class BS2ProGUI:
         self.create_footer()
 
     def create_header(self):
-        """Create modern header with title"""
+        """Create ultra-compact header with title"""
         header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 25))
+        header_frame.pack(fill="x", pady=(0, 6))
         
         # Title
         title_label = ctk.CTkLabel(
             header_frame,
             text="BS2PRO Controller",
-            font=ctk.CTkFont(size=24, weight="bold")
+            font=ctk.CTkFont(size=16, weight="bold")
         )
         title_label.pack(anchor="w")
 
     def create_device_status(self):
-        """Create device status section"""
+        """Create ultra-compact device status section"""
         status_frame = ctk.CTkFrame(self.main_frame)
-        status_frame.pack(fill="x", pady=(0, 25))
+        status_frame.pack(fill="x", pady=(0, 6), padx=6)
         
         # Status label
-        self.device_status_label = ctk.CTkLabel(
+        self.status_label = ctk.CTkLabel(
             status_frame,
-            text="Detecting BS2PRO...",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color="#ffc107"
+            text="Device Status: Not Connected",
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        self.device_status_label.pack(pady=20)
+        self.status_label.pack(pady=6)
 
     def create_controls_section(self):
-        """Create controls section"""
+        """Create ultra-compact controls section"""
         self.controls_frame = ctk.CTkFrame(self.main_frame)
-        self.controls_frame.pack(fill="x", pady=(0, 25))
+        self.controls_frame.pack(fill="x", pady=(0, 4))
         
         # Section title
         title_label = ctk.CTkLabel(
             self.controls_frame,
             text="Device Settings",
-            font=ctk.CTkFont(size=16, weight="bold")
+            font=ctk.CTkFont(size=12, weight="bold")
         )
-        title_label.pack(pady=(20, 10), padx=20, anchor="w")
+        title_label.pack(pady=(4, 2), padx=6, anchor="w")
 
-        # Autostart Mode
-        autostart_frame = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
-        autostart_frame.pack(fill="x", padx=20, pady=(0, 15))
+        # Create a horizontal layout for controls
+        controls_container = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
+        controls_container.pack(fill="x", padx=6, pady=(0, 4))
+
+        # Left side - Autostart Mode
+        left_frame = ctk.CTkFrame(controls_container, fg_color="transparent")
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 6))
         
         ctk.CTkLabel(
-            autostart_frame, 
+            left_frame, 
             text="Autostart Mode:",
-            font=ctk.CTkFont(size=12, weight="bold")
+            font=ctk.CTkFont(size=11, weight="bold")
         ).pack(anchor="w")
         
-        ctk.CTkLabel(
-            autostart_frame,
-            text="Configure how the device starts up",
-            font=ctk.CTkFont(size=10),
-            text_color="gray"
-        ).pack(anchor="w", pady=(2, 8))
-        
         self.autostart_combobox = ctk.CTkComboBox(
-            autostart_frame,
+            left_frame,
             values=["OFF", "Instant", "Delayed"],
-            width=150,
-            height=35,
-            command=self.on_autostart_select
+            width=120,
+            height=26,
+            command=self.on_autostart_select,
+            fg_color="#3a3a3a",
+            dropdown_fg_color="#2a2a2a",
+            dropdown_hover_color="#4a4a4a",
+            button_color="#1f538d",
+            button_hover_color="#14375e",
+            border_color="#565b5e",
+            text_color="white",
+            dropdown_text_color="white"
         )
         self.autostart_combobox.set(self.config_manager.load_setting("autostart_mode", "OFF"))
-        self.autostart_combobox.pack(anchor="w")
+        self.autostart_combobox.pack(anchor="w", pady=(2, 0))
 
-        # Toggle switches section
-        toggles_frame = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
-        toggles_frame.pack(fill="x", padx=20, pady=(10, 20))
+        # Right side - Toggle switches
+        right_frame = ctk.CTkFrame(controls_container, fg_color="transparent")
+        right_frame.pack(side="right", fill="both", expand=True)
 
         # RPM Indicator
         self.rpm_var = ctk.BooleanVar(value=self.config_manager.load_setting("rpm_indicator", "False") == "True")
         self.rpm_toggle = ctk.CTkSwitch(
-            toggles_frame,
+            right_frame,
             text="RPM Indicator",
             variable=self.rpm_var,
             command=self.on_rpm_toggle
         )
-        self.rpm_toggle.pack(anchor="w", pady=8)
+        self.rpm_toggle.pack(anchor="w", pady=1)
 
         # Start When Powered
         self.start_var = ctk.BooleanVar(value=self.config_manager.load_setting("start_when_powered", "False") == "True")
         self.start_toggle = ctk.CTkSwitch(
-            toggles_frame,
+            right_frame,
             text="Start When Powered",
             variable=self.start_var,
             command=self.on_start_toggle
         )
-        self.start_toggle.pack(anchor="w", pady=8)
+        self.start_toggle.pack(anchor="w", pady=1)
 
     def create_fan_speed_section(self):
-        """Create fan speed section"""
+        """Create ultra-compact fan speed section"""
         self.rpm_frame = ctk.CTkFrame(self.main_frame)
-        self.rpm_frame.pack(fill="x", pady=(0, 25))
+        self.rpm_frame.pack(fill="x", pady=(0, 4))
         
         # Section title
         title_label = ctk.CTkLabel(
             self.rpm_frame,
             text="Fan Speed Control",
-            font=ctk.CTkFont(size=16, weight="bold")
-        )
-        title_label.pack(pady=(20, 10), padx=20, anchor="w")
-        
-        # RPM selection
-        rpm_select_frame = ctk.CTkFrame(self.rpm_frame, fg_color="transparent")
-        rpm_select_frame.pack(fill="x", padx=20, pady=(0, 15))
-        
-        ctk.CTkLabel(
-            rpm_select_frame, 
-            text="Select Fan Speed:",
             font=ctk.CTkFont(size=12, weight="bold")
-        ).pack(anchor="w")
+        )
+        title_label.pack(pady=(4, 2), padx=6, anchor="w")
+        
+        # Horizontal layout for fan speed controls
+        fan_container = ctk.CTkFrame(self.rpm_frame, fg_color="transparent")
+        fan_container.pack(fill="x", padx=6, pady=(0, 4))
+        
+        # Left side - RPM selection
+        left_frame = ctk.CTkFrame(fan_container, fg_color="transparent")
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 6))
         
         ctk.CTkLabel(
-            rpm_select_frame,
-            text="Choose the RPM for optimal cooling performance",
-            font=ctk.CTkFont(size=10),
-            text_color="gray"
-        ).pack(anchor="w", pady=(2, 8))
+            left_frame, 
+            text="Select Fan Speed:",
+            font=ctk.CTkFont(size=11, weight="bold")
+        ).pack(anchor="w")
         
         self.rpm_values = [1300, 1700, 1900, 2100, 2400, 2700]
         self.rpm_combobox = ctk.CTkComboBox(
-            rpm_select_frame,
+            left_frame,
             values=[str(rpm) for rpm in self.rpm_values],
-            width=150,
-            height=35,
-            command=self.on_rpm_select
+            width=120,
+            height=26,
+            command=self.on_rpm_select,
+            fg_color="#3a3a3a",
+            dropdown_fg_color="#2a2a2a",
+            dropdown_hover_color="#4a4a4a",
+            button_color="#1f538d",
+            button_hover_color="#14375e",
+            border_color="#565b5e",
+            text_color="white",
+            dropdown_text_color="white"
         )
         last_rpm = int(self.config_manager.load_setting("last_rpm", 1900))
         self.rpm_combobox.set(str(last_rpm))
-        self.rpm_combobox.pack(anchor="w")
+        self.rpm_combobox.pack(anchor="w", pady=(2, 0))
 
-        # Current RPM display
+        # Right side - Current RPM display
+        right_frame = ctk.CTkFrame(fan_container, fg_color="transparent")
+        right_frame.pack(side="right", fill="both", expand=True)
+        
         self.rpm_display_label = ctk.CTkLabel(
-            self.rpm_frame,
-            text=f"Current Speed: {last_rpm} RPM",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            right_frame,
+            text=f"Current: {last_rpm} RPM",
+            font=ctk.CTkFont(size=12, weight="bold"),
             text_color="#1f538d"
         )
-        self.rpm_display_label.pack(pady=(15, 20))
+        self.rpm_display_label.pack(anchor="center", pady=(8, 0))
 
     def create_smart_mode_section(self):
-        """Create smart mode section"""
+        """Create ultra-compact smart mode section"""
         self.smart_mode_frame = ctk.CTkFrame(self.main_frame)
-        self.smart_mode_frame.pack(fill="x", pady=(0, 25))
+        self.smart_mode_frame.pack(fill="x", pady=(0, 4))
         
         # Section title
         title_label = ctk.CTkLabel(
             self.smart_mode_frame,
             text="Smart Mode",
-            font=ctk.CTkFont(size=16, weight="bold")
+            font=ctk.CTkFont(size=12, weight="bold")
         )
-        title_label.pack(pady=(20, 10), padx=20, anchor="w")
+        title_label.pack(pady=(4, 2), padx=6, anchor="w")
         
-        # Smart mode toggle
-        smart_mode_frame = ctk.CTkFrame(self.smart_mode_frame, fg_color="transparent")
-        smart_mode_frame.pack(fill="x", padx=20, pady=(0, 15))
+        # Smart mode container
+        smart_container = ctk.CTkFrame(self.smart_mode_frame, fg_color="transparent")
+        smart_container.pack(fill="x", padx=6, pady=(0, 4))
         
+        # Top row - Smart mode toggle
         self.smart_mode_var = ctk.BooleanVar(value=self.smart_mode_manager.is_smart_mode_enabled())
         self.smart_mode_switch = ctk.CTkSwitch(
-            smart_mode_frame,
-            text="Enable Smart Mode (Auto-adjust RPM based on CPU temperature)",
+            smart_container,
+            text="Enable Smart Mode (Auto-adjust based on CPU temp)",
             variable=self.smart_mode_var,
             command=self.on_smart_mode_toggle
         )
-        self.smart_mode_switch.pack(anchor="w", pady=8)
+        self.smart_mode_switch.pack(anchor="w", pady=(0, 4))
         
-        # Temperature display
-        temp_frame = ctk.CTkFrame(self.smart_mode_frame, fg_color="transparent")
-        temp_frame.pack(fill="x", padx=20, pady=(0, 15))
+        # Bottom row - Temperature info and config button
+        bottom_row = ctk.CTkFrame(smart_container, fg_color="transparent")
+        bottom_row.pack(fill="x")
+        
+        # Left side - Temperature display
+        temp_frame = ctk.CTkFrame(bottom_row, fg_color="transparent")
+        temp_frame.pack(side="left", fill="both", expand=True)
         
         self.temp_label = ctk.CTkLabel(
             temp_frame,
             text="CPU Temperature: --°C",
-            font=ctk.CTkFont(size=12, weight="bold"),
+            font=ctk.CTkFont(size=11, weight="bold"),
             text_color="#17a2b8"
         )
         self.temp_label.pack(anchor="w")
@@ -458,31 +474,31 @@ class BS2ProGUI:
         self.smart_status_label = ctk.CTkLabel(
             temp_frame,
             text="Smart Mode: Off",
-            font=ctk.CTkFont(size=10),
+            font=ctk.CTkFont(size=9),
             text_color="gray"
         )
-        self.smart_status_label.pack(anchor="w", pady=(2, 0))
+        self.smart_status_label.pack(anchor="w", pady=(1, 0))
         
-        # Configure button
+        # Right side - Configure button
         config_button = ctk.CTkButton(
-            temp_frame,
-            text="Configure Temperature Ranges",
+            bottom_row,
+            text="Configure",
             command=self.open_smart_mode_config,
-            width=200,
-            height=30
+            width=100,
+            height=24
         )
-        config_button.pack(anchor="w", pady=(10, 0))
+        config_button.pack(side="right", padx=(6, 0))
 
     def create_footer(self):
-        """Create modern footer"""
+        """Create ultra-compact footer"""
         footer_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        footer_frame.pack(fill="x", pady=(20, 10))
+        footer_frame.pack(fill="x", pady=(2, 0))
         
         # Footer text
         footer_label = ctk.CTkLabel(
             footer_frame,
-            text="BS2PRO Controller v2.0.0 • Made with ❤️",
-            font=ctk.CTkFont(size=10),
+            text="BS2PRO Controller v2.1.0 • Made with ❤️",
+            font=ctk.CTkFont(size=8),
             text_color="gray"
         )
         footer_label.pack(anchor="center")
@@ -490,12 +506,12 @@ class BS2ProGUI:
     def update_device_status(self):
         vid, pid = self.controller.detect_bs2pro()
         if vid and pid:
-            self.device_status_label.configure(
+            self.status_label.configure(
                 text=f"✅ BS2PRO detected (VID: {hex(vid)}, PID: {hex(pid)})", 
                 text_color="#28a745"
             )
         else:
-            self.device_status_label.configure(
+            self.status_label.configure(
                 text="❌ BS2PRO not detected", 
                 text_color="#dc3545"
             )
@@ -639,15 +655,15 @@ class BS2ProGUI:
         """Create smart mode configuration dialog"""
         dialog = ctk.CTkToplevel(self.root)
         dialog.title("Smart Mode Configuration")
-        dialog.geometry("800x750")
-        dialog.minsize(750, 700)  # Set minimum size
+        dialog.geometry("600x450")
+        dialog.resizable(True, True)
         dialog.transient(self.root)
         
         # Center the dialog
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (800 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (750 // 2)
-        dialog.geometry(f"800x750+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (600 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (450 // 2)
+        dialog.geometry(f"600x450+{x}+{y}")
         
         # Make sure dialog is visible before grabbing focus
         dialog.lift()
@@ -659,30 +675,30 @@ class BS2ProGUI:
         # Auto-adjust size after content is loaded
         dialog.after(200, lambda: self.auto_adjust_dialog_size(dialog))
         
-        # Main frame
+        # Main frame with compact padding
         main_frame = ctk.CTkFrame(dialog)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Title
         title_label = ctk.CTkLabel(
             main_frame,
             text="Temperature Range Configuration",
-            font=ctk.CTkFont(size=18, weight="bold")
+            font=ctk.CTkFont(size=16, weight="bold")
         )
-        title_label.pack(pady=(20, 20))
+        title_label.pack(pady=(10, 10))
         
         # Instructions
         instructions = ctk.CTkLabel(
             main_frame,
             text="Configure temperature ranges and their corresponding RPM values.\nRanges should not overlap and should be in ascending order.",
-            font=ctk.CTkFont(size=12),
+            font=ctk.CTkFont(size=11),
             text_color="gray"
         )
-        instructions.pack(pady=(0, 20))
+        instructions.pack(pady=(0, 10))
         
         # Temperature ranges list
-        ranges_frame = ctk.CTkScrollableFrame(main_frame, height=300)
-        ranges_frame.pack(fill="both", expand=True, pady=(0, 20))
+        ranges_frame = ctk.CTkScrollableFrame(main_frame, height=250)
+        ranges_frame.pack(fill="both", expand=True, pady=(0, 10))
         
         # Load current ranges
         ranges = self.smart_mode_manager.get_temperature_ranges()
@@ -696,74 +712,79 @@ class BS2ProGUI:
             main_frame,
             text="Add New Range",
             command=lambda: self.add_new_range(ranges_frame),
-            width=150
+            width=120,
+            height=28
         )
-        add_button.pack(pady=(0, 10))
+        add_button.pack(pady=(0, 8))
         
         # Buttons
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.pack(fill="x", pady=(10, 0))
+        button_frame.pack(fill="x", pady=(8, 0))
         
         save_button = ctk.CTkButton(
             button_frame,
             text="Save Configuration",
             command=lambda: self.save_smart_mode_config_simple(dialog),
-            width=150
+            width=120,
+            height=28
         )
-        save_button.pack(side="left", padx=(0, 10))
+        save_button.pack(side="left", padx=(0, 8))
         
         cancel_button = ctk.CTkButton(
             button_frame,
             text="Cancel",
             command=dialog.destroy,
-            width=150
+            width=120,
+            height=28
         )
         cancel_button.pack(side="left")
     
     def create_range_widget(self, parent, index, range_data):
         """Create a temperature range widget"""
         range_frame = ctk.CTkFrame(parent)
-        range_frame.pack(fill="x", pady=5)
+        range_frame.pack(fill="x", pady=3)
         
         # Min temp
-        min_label = ctk.CTkLabel(range_frame, text="Min:", width=50)
-        min_label.pack(side="left", padx=(10, 5), pady=10)
+        min_label = ctk.CTkLabel(range_frame, text="Min:", width=40)
+        min_label.pack(side="left", padx=(8, 3), pady=6)
         
-        min_entry = ctk.CTkEntry(range_frame, width=80, placeholder_text="Min temp")
+        min_entry = ctk.CTkEntry(range_frame, width=70, placeholder_text="Min temp")
         min_entry.insert(0, str(range_data['min_temp']))
-        min_entry.pack(side="left", padx=(0, 5), pady=10)
+        min_entry.pack(side="left", padx=(0, 3), pady=6)
         
         # Max temp
-        max_label = ctk.CTkLabel(range_frame, text="Max:", width=50)
-        max_label.pack(side="left", padx=(10, 5), pady=10)
+        max_label = ctk.CTkLabel(range_frame, text="Max:", width=40)
+        max_label.pack(side="left", padx=(8, 3), pady=6)
         
-        max_entry = ctk.CTkEntry(range_frame, width=80, placeholder_text="Max temp")
+        max_entry = ctk.CTkEntry(range_frame, width=70, placeholder_text="Max temp")
         max_entry.insert(0, str(range_data['max_temp']))
-        max_entry.pack(side="left", padx=(0, 5), pady=10)
+        max_entry.pack(side="left", padx=(0, 3), pady=6)
         
         # RPM
-        rpm_label = ctk.CTkLabel(range_frame, text="RPM:", width=50)
-        rpm_label.pack(side="left", padx=(10, 5), pady=10)
+        rpm_label = ctk.CTkLabel(range_frame, text="RPM:", width=40)
+        rpm_label.pack(side="left", padx=(8, 3), pady=6)
         
-        rpm_entry = ctk.CTkEntry(range_frame, width=80, placeholder_text="RPM")
+        rpm_entry = ctk.CTkEntry(range_frame, width=70, placeholder_text="RPM")
         rpm_entry.insert(0, str(range_data['rpm']))
-        rpm_entry.pack(side="left", padx=(0, 5), pady=10)
+        rpm_entry.pack(side="left", padx=(0, 3), pady=6)
         
         # Description
-        desc_entry = ctk.CTkEntry(range_frame, width=150, placeholder_text="Description")
+        desc_entry = ctk.CTkEntry(range_frame, width=120, placeholder_text="Description")
         desc_entry.insert(0, range_data.get('description', ''))
-        desc_entry.pack(side="left", padx=(10, 5), pady=10)
+        desc_entry.pack(side="left", padx=(8, 3), pady=6)
         
         # Remove button
         remove_button = ctk.CTkButton(
             range_frame,
-            text="Remove",
+            text="✕",
             command=lambda: self.remove_range_widget(parent, range_frame, index),
-            width=80,
+            width=35,
+            height=26,
             fg_color="#dc3545",
-            hover_color="#c82333"
+            hover_color="#c82333",
+            font=ctk.CTkFont(size=14, weight="bold")
         )
-        remove_button.pack(side="right", padx=(5, 10), pady=10)
+        remove_button.pack(side="right", padx=(3, 8), pady=6)
         
         # Store widget references
         widget_data = {
@@ -787,9 +808,9 @@ class BS2ProGUI:
             req_height = dialog.winfo_reqheight()
             
             # Add some padding
-            padding = 50
-            new_width = max(700, req_width + padding)
-            new_height = max(600, req_height + padding)
+            padding = 30
+            new_width = max(600, req_width + padding)
+            new_height = max(400, req_height + padding)
             
             # Get screen dimensions
             screen_width = dialog.winfo_screenwidth()
