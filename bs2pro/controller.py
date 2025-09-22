@@ -52,8 +52,24 @@ class BS2ProController:
         try:
             devices = hid.enumerate()
             for d in devices:
-                if "BS2PRO" in d.get("product_string", ""):
-                    return d["vendor_id"], d["product_id"]
+                # Handle both dictionary-style and attribute-style access for different hidapi versions
+                try:
+                    # Try attribute access first (newer hidapi)
+                    product_string = getattr(d, 'product_string', '')
+                    vendor_id = getattr(d, 'vendor_id', None)
+                    product_id = getattr(d, 'product_id', None)
+                except (AttributeError, TypeError):
+                    # Fallback to dictionary access (older hidapi)
+                    try:
+                        product_string = d.get("product_string", "")
+                        vendor_id = d.get("vendor_id")
+                        product_id = d.get("product_id")
+                    except (AttributeError, TypeError):
+                        # Skip this device if we can't access its info
+                        continue
+                
+                if product_string and "BS2PRO" in product_string:
+                    return vendor_id, product_id
             return None, None
         except Exception as e:
             logging.error(f"Error enumerating HID devices: {e}")

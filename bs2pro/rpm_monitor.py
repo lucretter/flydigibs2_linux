@@ -64,9 +64,25 @@ class RPMMonitor:
         try:
             devices = hid.enumerate()
             for d in devices:
-                if "BS2PRO" in d.get("product_string", ""):
-                    self.vid = d["vendor_id"]
-                    self.pid = d["product_id"]
+                # Handle both dictionary-style and attribute-style access for different hidapi versions
+                try:
+                    # Try attribute access first (newer hidapi)
+                    product_string = getattr(d, 'product_string', '')
+                    vendor_id = getattr(d, 'vendor_id', None)
+                    product_id = getattr(d, 'product_id', None)
+                except (AttributeError, TypeError):
+                    # Fallback to dictionary access (older hidapi)
+                    try:
+                        product_string = d.get("product_string", "")
+                        vendor_id = d.get("vendor_id")
+                        product_id = d.get("product_id")
+                    except (AttributeError, TypeError):
+                        # Skip this device if we can't access its info
+                        continue
+                
+                if product_string and "BS2PRO" in product_string:
+                    self.vid = vendor_id
+                    self.pid = product_id
                     logging.info(f"BS2Pro found: VID={self.vid:04x}, PID={self.pid:04x}")
                     return True
             return False
