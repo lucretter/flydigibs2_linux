@@ -50,7 +50,7 @@ jobs:
           cp -r bs2pro/ package-files/opt/bs2pro-controller/
           
           # Install Python dependencies to the target directory
-          pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi customtkinter Pillow ttkbootstrap --no-deps
+          pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi Pillow --no-deps
           
           # Create wrapper script that uses system Python and Qt
           cat > package-files/usr/bin/bs2pro_controller << 'EOF'

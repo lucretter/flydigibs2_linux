@@ -41,7 +41,7 @@ fi
 
 # Ensure required Python packages are installed in venv
 echo "Installing required Python packages in venv..."
-pip install hid customtkinter PyQt6  # Updated dependencies for native GUI support
+pip install hid PyQt6  # Dependencies for PyQt6 GUI support
 
 # Build executable
 pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" \

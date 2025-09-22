@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point with GUI framework selection
-Supports both CustomTkinter and native PyQt6 interfaces
+Main entry point for BS2Pro Controller with PyQt6 GUI
 """
 
 import os
@@ -21,8 +20,6 @@ try:
     from bs2pro.config import ConfigManager
     from bs2pro.gui_qt import create_qt_application  # PyQt6 GUI
     from bs2pro.udev_manager import UdevRulesManager
-    # CustomTkinter GUI will be imported only when needed
-    BS2ProGUI = None
 except ImportError:
     # Fallback for development - try relative imports
     try:
@@ -30,8 +27,6 @@ except ImportError:
         from config import ConfigManager
         from gui_qt import create_qt_application  # PyQt6 GUI
         from udev_manager import UdevRulesManager
-        # CustomTkinter GUI will be imported only when needed
-        BS2ProGUI = None
     except ImportError:
         # Last resort - try importing from the same directory
         import importlib.util
@@ -51,26 +46,6 @@ except ImportError:
         ConfigManager = config_module.ConfigManager
         create_qt_application = gui_qt_module.create_qt_application
         UdevRulesManager = udev_module.UdevRulesManager
-        # CustomTkinter GUI will be imported only when needed
-        BS2ProGUI = None
-
-def load_customtkinter_gui():
-    """Dynamically load CustomTkinter GUI when needed"""
-    try:
-        import customtkinter as ctk
-        from bs2pro.gui import BS2ProGUI
-        return BS2ProGUI
-    except ImportError:
-        try:
-            # Fallback for development
-            import sys, os
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            sys.path.insert(0, current_dir)
-            from gui import BS2ProGUI
-            return BS2ProGUI
-        except ImportError:
-            print("❌ CustomTkinter GUI not available. Please install: pip install customtkinter")
-            return None
 
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",
@@ -129,12 +104,15 @@ def setup_logging(verbose=False):
     return root_logger
 
 DEFAULT_SETTINGS = {
-    "last_rpm": "1300",
-    "rpm_indicator": "True",
-    "start_when_powered": "True",
-    "autostart_mode": "Instant",
-    "udev_rules_installed": "False",
-    "gui_framework": "auto"  # auto, customtkinter, pyqt6
+    "theme": "dark",
+    "autostart": "off",
+    "rpm_mode": "off",
+    "last_rpm": 1300,
+    "autostart_delayed": "disabled", 
+    "start_when_powered": "off",
+    "smart_mode_enabled": True,
+    "auto_tray": True,
+    "udev_rules_installed": "False"
 }
 
 def detect_desktop_environment():
@@ -165,29 +143,7 @@ def detect_desktop_environment():
     
     return 'unknown'
 
-def choose_gui_framework(config_manager, force_framework=None):
-    """Choose the appropriate GUI framework based on environment and settings"""
-    if force_framework:
-        return force_framework
-    
-    # Check saved preference
-    saved_framework = config_manager.load_setting("gui_framework", "auto")
-    if saved_framework in ["customtkinter", "pyqt6"]:
-        return saved_framework
-    
-    # Auto-detect based on desktop environment
-    desktop_env = detect_desktop_environment()
-    
-    if desktop_env in ['kde', 'gnome']:
-        # For KDE and GNOME, prefer PyQt6 for native theming
-        logging.info(f"Detected {desktop_env.upper()} desktop, using PyQt6 for native theming")
-        return 'pyqt6'
-    else:
-        # For other environments, use CustomTkinter
-        logging.info(f"Detected {desktop_env} desktop, using CustomTkinter")
-        return 'customtkinter'
-
-def check_and_prompt_udev_rules(controller, config_manager, use_qt=False):
+def check_and_prompt_udev_rules(controller, config_manager):
     """Check if udev rules are needed and prompt user if necessary"""
     # Detect device to get vendor and product IDs
     vid, pid = controller.detect_bs2pro()
@@ -207,64 +163,54 @@ def check_and_prompt_udev_rules(controller, config_manager, use_qt=False):
     udev_manager = UdevRulesManager(vid, pid)
     
     if not udev_manager.udev_rules_exist():
-        # Rules don't exist, prompt user to install them
+        # Prompt user to install udev rules
         logging.info("udev rules not found, prompting user for installation")
         
-        if use_qt:
-            # Use PyQt6 for the prompt
-            try:
-                from PyQt6.QtWidgets import QApplication, QMessageBox
-                app = QApplication.instance() or QApplication([])
-                
-                msg = QMessageBox()
-                msg.setWindowTitle("Install udev Rules")
-                msg.setText("To use BS2PRO Controller without sudo privileges, "
-                           "udev rules need to be installed.\n\n"
-                           "This will allow non-root users to access your BS2PRO device.\n\n"
-                           "Do you want to install udev rules now? (requires sudo password)")
-                msg.setIcon(QMessageBox.Icon.Question)
-                msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-                msg.setDefaultButton(QMessageBox.StandardButton.Yes)
-                
-                result = msg.exec()
-                
-                if result == QMessageBox.StandardButton.Yes:
+        # Use PyQt6 for the prompt
+        try:
+            from PyQt6.QtWidgets import QApplication, QMessageBox
+            app = QApplication.instance() or QApplication([])
+            
+            msg = QMessageBox()
+            msg.setWindowTitle("Install udev Rules")
+            msg.setText("To use BS2PRO Controller without sudo privileges, "
+                       "udev rules need to be installed.\n\n"
+                       "This will allow non-root users to access your BS2PRO device.\n\n"
+                       "Do you want to install udev rules now? (requires sudo password)")
+            msg.setIcon(QMessageBox.Icon.Question)
+            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+            
+            result = msg.exec()
+            
+            if result == QMessageBox.StandardButton.Yes:
+                udev_manager.install_udev_rules()
+            
+        except ImportError:
+            # Fallback to console prompt if PyQt6 not available
+            print(f"\n⚠️  BS2Pro device detected (VID: {vid:04x}, PID: {pid:04x})")
+            print("Udev rules are needed for proper device access.")
+            print("This requires administrator privileges.")
+            
+            while True:
+                response = input("Install udev rules now? (y/n): ").lower().strip()
+                if response in ['y', 'yes']:
                     udev_manager.install_udev_rules()
-                
-            except ImportError:
-                # Fallback to tkinter if PyQt6 not available
-                use_qt = False
-        
-        if not use_qt:
-            # Use tkinter for the prompt
-            try:
-                import tkinter as tk
-                from tkinter import messagebox
-                
-                # Create a temporary root window for the dialog
-                root = tk.Tk()
-                root.withdraw()  # Hide the main window
-                
-                # Prompt user
-                udev_manager.prompt_for_udev_installation(root)
-                
-                root.destroy()
-                
-            except ImportError:
-                logging.warning("Neither PyQt6 nor tkinter available for udev prompt")
+                    break
+                elif response in ['n', 'no']:
+                    print("⚠️  Skipped udev rules installation. Device access may be limited.")
+                    break
+                else:
+                    print("Please enter 'y' or 'n'.")
         
         # Mark as prompted in config (even if user declined, to avoid repeated prompts)
         config_manager.save_setting("udev_rules_installed", "True")
 
 def handle_cli_args(controller, config_manager):
     """Handle command line arguments for CLI mode"""
-    parser = argparse.ArgumentParser(description='BS2Pro Controller with Native GUI Support')
+    parser = argparse.ArgumentParser(description='BS2Pro Controller with PyQt6 GUI')
     parser.add_argument('-v', '--verbose', action='store_true', 
                        help='Enable verbose logging (show detailed debug information)')
-    parser.add_argument('--gui', choices=['auto', 'customtkinter', 'pyqt6'], default='auto',
-                       help='Choose GUI framework (auto, customtkinter, pyqt6)')
-    parser.add_argument('--save-gui-choice', action='store_true',
-                       help='Save the GUI framework choice for future runs')
     parser.add_argument('command', nargs='?', 
                        help='Command to execute (rpm_1300, rpm_2700, etc.)')
     
@@ -272,11 +218,6 @@ def handle_cli_args(controller, config_manager):
     
     # Set up logging based on verbose flag
     setup_logging(verbose=args.verbose)
-    
-    # Save GUI choice if requested
-    if args.save_gui_choice and args.gui != 'auto':
-        config_manager.save_setting("gui_framework", args.gui)
-        print(f"✅ GUI framework preference saved: {args.gui}")
     
     # Handle commands if provided
     if args.command:
@@ -304,7 +245,7 @@ def handle_cli_args(controller, config_manager):
             print(f"❌ Unknown command: {arg}")
         sys.exit(0)
     
-    return args.verbose, args.gui
+    return args.verbose
 
 def main():
     """Main entry point for the application"""
@@ -314,49 +255,25 @@ def main():
     # Initialize settings if this is the first run
     config_manager.initialize_settings()
     
-    # Handle CLI args first (before any GUI stuff) and get verbose flag and GUI choice
-    verbose, gui_choice = handle_cli_args(controller, config_manager)
+    # Handle CLI args first (before any GUI stuff) and get verbose flag
+    verbose = handle_cli_args(controller, config_manager)
     
-    # Choose GUI framework
-    framework = choose_gui_framework(config_manager, gui_choice if gui_choice != 'auto' else None)
+    print("🖥️  Using PyQt6 GUI framework")
     
-    print(f"🖥️  Using {framework.upper()} GUI framework")
+    # Check and prompt for udev rules if needed
+    check_and_prompt_udev_rules(controller, config_manager)
     
-    # Check and prompt for udev rules if needed (only in GUI mode)
-    check_and_prompt_udev_rules(controller, config_manager, use_qt=(framework == 'pyqt6'))
-    
-    # Start the appropriate GUI
-    if framework == 'pyqt6':
-        # Use PyQt6 for native theming
-        try:
-            print("🎨 Starting PyQt6 GUI with native system theming...")
-            create_qt_application(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)
-        except ImportError as e:
-            print(f"❌ PyQt6 not available ({e}), falling back to CustomTkinter")
-            CustomTkinterGUI = load_customtkinter_gui()
-            if CustomTkinterGUI:
-                CustomTkinterGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)
-            else:
-                print("❌ No GUI framework available. Please install PyQt6 or CustomTkinter.")
-                sys.exit(1)
-        except Exception as e:
-            print(f"❌ Error starting PyQt6 GUI ({e}), falling back to CustomTkinter")
-            logging.error(f"PyQt6 GUI error: {e}")
-            CustomTkinterGUI = load_customtkinter_gui()
-            if CustomTkinterGUI:
-                CustomTkinterGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)
-            else:
-                print("❌ No GUI framework available. Please install PyQt6 or CustomTkinter.")
-                sys.exit(1)
-    else:
-        # Use CustomTkinter
-        print("🎨 Starting CustomTkinter GUI...")
-        CustomTkinterGUI = load_customtkinter_gui()
-        if CustomTkinterGUI:
-            CustomTkinterGUI(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)
-        else:
-            print("❌ CustomTkinter not available. Please install: pip install customtkinter")
-            sys.exit(1)
+    # Start PyQt6 GUI
+    try:
+        print("🎨 Starting PyQt6 GUI with native system theming...")
+        create_qt_application(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)
+    except ImportError as e:
+        print(f"❌ PyQt6 not available ({e}). Please install: sudo apt install python3-pyqt6")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error starting PyQt6 GUI: {e}")
+        logging.error(f"PyQt6 GUI error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

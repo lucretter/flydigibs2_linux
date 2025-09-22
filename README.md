@@ -18,14 +18,14 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - 📊 **Real-time RPM Monitoring** — Live display of actual fan RPM from the device  
 - 🗂️ **System Tray Integration** — Minimize to system tray with right-click menu
 - 🎨 **Native GUI Support** — PyQt6 with native desktop theming (KDE Breeze, GNOME Adwaita)
-- 🖥️ **Dual GUI Framework** — Choose between PyQt6 (native) or CustomTkinter interfaces
+- 🖥️ **Native PyQt6 GUI** — System-integrated interface with native desktop theming
 - 🧪 **CLI Support** — Send commands directly via terminal 
 
 ## 📦 Requirements
 
 - Python 3.8+
 - [hidapi](https://pypi.org/project/hid/)
-- [customtkinter](https://pypi.org/project/customtkinter/) (for legacy GUI)
+- [PyQt6](https://pypi.org/project/PyQt6/) (for native GUI theming)
 - [PyQt6](https://pypi.org/project/PyQt6/) (for native GUI and system tray functionality)
 - tkinter (usually bundled with Python)
 - Flydigi BS2Pro (might work on other models, haven't tested)
@@ -72,29 +72,6 @@ This will:
 - Install dependencies  
 - Build the executable  
 - Install it to `/usr/bin/bs2pro_controller`  
-
-## 🎨 Native Desktop Theming
-
-The PyQt6 GUI automatically detects and adapts to your desktop environment:
-
-- **KDE/Plasma**: Uses native Breeze theme
-- **GNOME**: Uses Fusion style (clean, modern look compatible with libadwaita)  
-- **XFCE**: Uses GTK3 theming
-
-### Fedora GNOME Users
-
-**Good news**: The app works perfectly out-of-the-box on Fedora GNOME! 
-
-The Fusion style that Qt automatically selects for GNOME provides a clean, modern appearance that integrates well with libadwaita themes. No additional packages are required.
-
-If you want to experiment with other Qt styles, you can optionally install:
-
-```bash
-# Optional: Additional Qt6 styles (primarily for KDE environments)
-sudo dnf install plasma-breeze-qt6 plasma-oxygen-qt6
-```
-
-**Note**: The app works well with the default Fusion style on GNOME, which provides a clean appearance that integrates nicely with libadwaita themes.
 
 ## 🔐 First Run Setup - udev Rules Prompt
 
