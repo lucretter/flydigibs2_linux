@@ -31,7 +31,10 @@ class ConfigManager:
         
         if not os.path.exists(self.config_file):
             config = configparser.ConfigParser()
-            config["Settings"] = self.default_settings
+            config["Settings"] = {}
+            # Convert all default values to strings
+            for key, value in self.default_settings.items():
+                config["Settings"][key] = str(value)
             with open(self.config_file, "w") as f:
                 config.write(f)
             return True
@@ -45,7 +48,7 @@ class ConfigManager:
         updated = False
         for key, value in self.default_settings.items():
             if key not in config["Settings"]:
-                config["Settings"][key] = value
+                config["Settings"][key] = str(value)  # Convert to string for ConfigParser
                 updated = True
                 
         if updated:
