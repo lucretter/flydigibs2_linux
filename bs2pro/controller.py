@@ -104,50 +104,67 @@ class BS2ProController:
                     logging.error("BS2PRO device not found.")
                     return False
                 
-                # Try different hidapi APIs based on version
-                if hasattr(hid, 'Device'):
-                    # New hidapi API (0.14+)
-                    dev = hid.Device(vid=vid, pid=pid)
-                    payload = bytes.fromhex(hex_cmd)
-                    dev.write(payload)
-                    # Try with timeout first, fallback to without timeout
+                # Try different hidapi APIs based on version, starting with most compatible
+                device_opened = False
+                
+                # Method 1: Try hid.open() function first (most compatible)
+                if hasattr(hid, 'open') and not device_opened:
                     try:
-                        dev.read(32, timeout=1000)
-                    except TypeError:
-                        # Some versions don't support timeout parameter
-                        dev.read(32)
-                    dev.close()
-                elif hasattr(hid, 'device'):
-                    # hidapi 0.14.0.post4 API (lowercase device)
-                    dev = hid.device()
-                    dev.open(vid, pid)
-                    payload = bytes.fromhex(hex_cmd)
-                    dev.write(payload)
-                    # Try with timeout first, fallback to without timeout
+                        dev = hid.open(vid, pid)
+                        if dev is not None:
+                            device_opened = True
+                            payload = bytes.fromhex(hex_cmd)
+                            dev.write(payload)
+                            # Try with timeout first, fallback to without timeout
+                            try:
+                                dev.read(32, timeout=1000)
+                            except TypeError:
+                                # Some versions don't support timeout parameter
+                                dev.read(32)
+                            dev.close()
+                    except Exception as e:
+                        logging.debug(f"hid.open() failed: {e}")
+                
+                # Method 2: Try lowercase device() class
+                if hasattr(hid, 'device') and not device_opened:
                     try:
-                        dev.read(32, timeout=1000)
-                    except TypeError:
-                        # Some versions don't support timeout parameter
-                        dev.read(32)
-                    dev.close()
-                elif hasattr(hid, 'open'):
-                    # Old hidapi API (0.13 and earlier)
-                    dev = hid.open(vid, pid)
-                    if dev is None:
-                        raise Exception("Failed to open HID device")
-                    payload = bytes.fromhex(hex_cmd)
-                    dev.write(payload)
-                    # Try with timeout first, fallback to without timeout
+                        dev = hid.device()
+                        dev.open(vid, pid)
+                        device_opened = True
+                        payload = bytes.fromhex(hex_cmd)
+                        dev.write(payload)
+                        # Try with timeout first, fallback to without timeout
+                        try:
+                            dev.read(32, timeout=1000)
+                        except TypeError:
+                            # Some versions don't support timeout parameter
+                            dev.read(32)
+                        dev.close()
+                    except Exception as e:
+                        logging.debug(f"hid.device() failed: {e}")
+                
+                # Method 3: Try Device class without keyword arguments
+                if hasattr(hid, 'Device') and not device_opened:
                     try:
-                        dev.read(32, timeout=1000)
-                    except TypeError:
-                        # Some versions don't support timeout parameter
-                        dev.read(32)
-                    dev.close()
-                else:
+                        dev = hid.Device()
+                        dev.open(vid, pid)
+                        device_opened = True
+                        payload = bytes.fromhex(hex_cmd)
+                        dev.write(payload)
+                        # Try with timeout first, fallback to without timeout
+                        try:
+                            dev.read(32, timeout=1000)
+                        except TypeError:
+                            # Some versions don't support timeout parameter
+                            dev.read(32)
+                        dev.close()
+                    except Exception as e:
+                        logging.debug(f"hid.Device() failed: {e}")
+                
+                if not device_opened:
                     if status_callback:
-                        status_callback("❌ Unsupported hidapi version", "danger")
-                    logging.error("Unsupported hidapi version - no Device, device, or open method")
+                        status_callback("❌ Failed to open HID device", "danger")
+                    logging.error("All HID device opening methods failed")
                     return False
                 
             if status_callback:
@@ -170,14 +187,41 @@ class BS2ProController:
                         return None
                     
                     logging.debug(f"Creating shared HID device VID={vid:04x}, PID={pid:04x}")
-                    if hasattr(hid, 'Device'):
-                        self.shared_device = hid.Device(vid=vid, pid=pid)
-                    elif hasattr(hid, 'device'):
-                        self.shared_device = hid.device()
-                        self.shared_device.open(vid, pid)
-                    elif hasattr(hid, 'open'):
-                        self.shared_device = hid.open(vid, pid)
-                    else:
+                    
+                    # Try different hidapi APIs, starting with most compatible
+                    device_created = False
+                    
+                    # Method 1: Try hid.open() function first
+                    if hasattr(hid, 'open') and not device_created:
+                        try:
+                            self.shared_device = hid.open(vid, pid)
+                            if self.shared_device is not None:
+                                device_created = True
+                        except Exception as e:
+                            logging.debug(f"hid.open() failed: {e}")
+                    
+                    # Method 2: Try lowercase device() class
+                    if hasattr(hid, 'device') and not device_created:
+                        try:
+                            self.shared_device = hid.device()
+                            self.shared_device.open(vid, pid)
+                            device_created = True
+                        except Exception as e:
+                            logging.debug(f"hid.device() failed: {e}")
+                            self.shared_device = None
+                    
+                    # Method 3: Try Device class without keyword arguments
+                    if hasattr(hid, 'Device') and not device_created:
+                        try:
+                            self.shared_device = hid.Device()
+                            self.shared_device.open(vid, pid)
+                            device_created = True
+                        except Exception as e:
+                            logging.debug(f"hid.Device() failed: {e}")
+                            self.shared_device = None
+                    
+                    if not device_created or self.shared_device is None:
+                        logging.error("Failed to create shared HID device with any method")
                         return None
                     
                     logging.debug("Shared HID device created successfully")

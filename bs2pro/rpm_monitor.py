@@ -109,32 +109,52 @@ class RPMMonitor:
             
         try:
             logging.info(f"Attempting to open HID device VID={self.vid:04x}, PID={self.pid:04x}")
-            if hasattr(hid, 'Device'):
-                # New hidapi API (0.14+)
-                logging.info("Using new hidapi API (Device)")
-                self.device = hid.Device(vid=self.vid, pid=self.pid)
-                logging.info("Device opened successfully with new API")
-                return True
-            elif hasattr(hid, 'device'):
-                # hidapi 0.14.0.post4 API (lowercase device)
-                logging.info("Using hidapi 0.14.0.post4 API (device)")
-                self.device = hid.device()
-                self.device.open(self.vid, self.pid)
-                logging.info("Device opened successfully with 0.14.0.post4 API")
-                return True
-            elif hasattr(hid, 'open'):
-                # Old hidapi API (0.13 and earlier)
-                logging.info("Using old hidapi API (open)")
-                self.device = hid.open(self.vid, self.pid)
-                success = self.device is not None
-                if success:
-                    logging.info("Device opened successfully with old API")
-                else:
-                    logging.warning("Device open returned None")
-                return success
-            else:
-                logging.error("Unsupported hidapi version")
+            
+            # Try different hidapi APIs, starting with most compatible
+            device_opened = False
+            
+            # Method 1: Try hid.open() function first (most compatible)
+            if hasattr(hid, 'open') and not device_opened:
+                try:
+                    logging.info("Using hidapi open() function")
+                    self.device = hid.open(self.vid, self.pid)
+                    if self.device is not None:
+                        device_opened = True
+                        logging.info("Device opened successfully with open() function")
+                    else:
+                        logging.debug("hid.open() returned None")
+                except Exception as e:
+                    logging.debug(f"hid.open() failed: {e}")
+            
+            # Method 2: Try lowercase device() class
+            if hasattr(hid, 'device') and not device_opened:
+                try:
+                    logging.info("Using hidapi device() class")
+                    self.device = hid.device()
+                    self.device.open(self.vid, self.pid)
+                    device_opened = True
+                    logging.info("Device opened successfully with device() class")
+                except Exception as e:
+                    logging.debug(f"hid.device() failed: {e}")
+                    self.device = None
+            
+            # Method 3: Try Device class without keyword arguments
+            if hasattr(hid, 'Device') and not device_opened:
+                try:
+                    logging.info("Using hidapi Device() class")
+                    self.device = hid.Device()
+                    self.device.open(self.vid, self.pid)
+                    device_opened = True
+                    logging.info("Device opened successfully with Device() class")
+                except Exception as e:
+                    logging.debug(f"hid.Device() failed: {e}")
+                    self.device = None
+            
+            if not device_opened:
+                logging.error("All HID device opening methods failed")
                 return False
+            
+            return True
         except Exception as e:
             logging.error(f"Error opening HID device: {e}")
             return False
