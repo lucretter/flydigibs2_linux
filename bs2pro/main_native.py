@@ -306,7 +306,8 @@ def handle_cli_args(controller, config_manager):
     
     return args.verbose, args.gui
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the application"""
     controller = BS2ProController()
     config_manager = ConfigManager(CONFIG_FILE, DEFAULT_SETTINGS)
     
@@ -356,3 +357,6 @@ if __name__ == "__main__":
         else:
             print("❌ CustomTkinter not available. Please install: pip install customtkinter")
             sys.exit(1)
+
+if __name__ == "__main__":
+    main()
