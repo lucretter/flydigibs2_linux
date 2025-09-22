@@ -28,8 +28,8 @@ jobs:
           sudo apt-get install -y \
             ruby ruby-dev build-essential \
             libhidapi-hidraw0 libhidapi-libusb0 \
-            qt6-base-dev breeze-icon-theme \
-            plasma-breeze-theme qtbase6-style-plugins
+            qt6-base-dev kf6-breeze-icon-theme \
+            kde-style-breeze kde-style-oxygen-qt6
           sudo gem install --no-document fpm
 
 
@@ -122,7 +122,7 @@ jobs:
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
             -d "qt6-base-dev | libqt6gui6" \
-            -d "breeze-icon-theme" \
+            -d "kf6-breeze-icon-theme" \
             --description "Controller for BS2PRO devices with native GUI support (PyQt6 with cross-desktop theming)" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
@@ -138,7 +138,7 @@ jobs:
             -d "hidapi" \
             -d "python3-tkinter" \
             -d "qt6-qtbase | libQt6Gui6" \
-            -d "breeze-icon-theme" \
+            -d "kf6-breeze-icon-theme" \
             --description "Controller for BS2PRO devices with native GUI support (PyQt6 with cross-desktop theming)" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \
