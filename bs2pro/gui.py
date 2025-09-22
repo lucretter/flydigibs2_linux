@@ -497,7 +497,7 @@ class BS2ProGUI:
         # Footer text
         footer_label = ctk.CTkLabel(
             footer_frame,
-            text="BS2PRO Controller v2.1.0 • Made with ❤️",
+            text="BS2PRO Controller v2.3.0 • Made with ❤️",
             font=ctk.CTkFont(size=8),
             text_color="gray"
         )

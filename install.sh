@@ -31,7 +31,7 @@ fi
 source "$VENV_DIR/bin/activate"
 
 APP_NAME="bs2pro_controller"
-MAIN_SCRIPT="bs2pro/main.py"
+MAIN_SCRIPT="bs2pro/main_native.py"  # Updated to use the new native main script
 
 # Check for PyInstaller, install if missing
 if ! "$VENV_DIR/bin/pyinstaller" --version &> /dev/null; then
@@ -41,7 +41,7 @@ fi
 
 # Ensure required Python packages are installed in venv
 echo "Installing required Python packages in venv..."
-pip install hid ttkbootstrap PyQt6
+pip install hid customtkinter PyQt6  # Updated dependencies for native GUI support
 
 # Build executable
 pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" \
