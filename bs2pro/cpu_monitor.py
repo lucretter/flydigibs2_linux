@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-CPU Temperature Monitoring Module
+Temperature Monitoring Module
+Supports CPU, GPU, and other temperature sources
 """
 import os
 import logging
@@ -8,12 +9,17 @@ import subprocess
 import threading
 import time
 
-class CPUMonitor:
-    def __init__(self):
+class TemperatureMonitor:
+    def __init__(self, source="cpu"):
+        self.source = source
         self.temperature = 0
         self.is_monitoring = False
         self.monitor_thread = None
         self.callbacks = []
+        
+    def set_source(self, source):
+        """Set the temperature source"""
+        self.source = source
         
     def add_callback(self, callback):
         """Add a callback function to be called when temperature changes"""
@@ -31,6 +37,18 @@ class CPUMonitor:
                 callback(temperature)
             except Exception as e:
                 logging.error(f"Error in temperature callback: {e}")
+    
+    def get_temperature(self):
+        """Get current temperature based on selected source"""
+        if self.source == "cpu":
+            return self.get_cpu_temperature()
+        elif self.source == "gpu":
+            return self.get_gpu_temperature()
+        elif self.source == "average":
+            return self.get_average_temperature()
+        else:
+            logging.warning(f"Unknown temperature source: {self.source}, using CPU")
+            return self.get_cpu_temperature()
     
     def get_cpu_temperature(self):
         """Get current CPU temperature"""
@@ -59,6 +77,83 @@ class CPUMonitor:
         except Exception as e:
             logging.error(f"Error reading CPU temperature: {e}")
             return 45.0
+    
+    def get_gpu_temperature(self):
+        """Get current GPU temperature"""
+        try:
+            # Try NVIDIA GPU first
+            temp = self._try_nvidia_smi()
+            if temp is not None:
+                return temp
+            
+            # Try AMD GPU
+            temp = self._try_amd_gpu()
+            if temp is not None:
+                return temp
+            
+            # Fallback
+            logging.warning("Could not read GPU temperature, using CPU temperature as fallback")
+            return self.get_cpu_temperature()
+            
+        except Exception as e:
+            logging.error(f"Error reading GPU temperature: {e}")
+            return self.get_cpu_temperature()
+    
+    def get_average_temperature(self):
+        """Get average temperature across CPU and GPU"""
+        try:
+            # Temporarily get CPU temp
+            current_source = self.source
+            self.source = "cpu"
+            cpu_temp = self.get_temperature()
+            self.source = "gpu"
+            gpu_temp = self.get_temperature()
+            self.source = current_source  # Restore
+            
+            if gpu_temp and gpu_temp > 0:
+                return (cpu_temp + gpu_temp) / 2
+            else:
+                return cpu_temp
+        except Exception as e:
+            logging.error(f"Error calculating average temperature: {e}")
+            return self.get_temperature()  # Fallback to current source
+    
+    def _try_nvidia_smi(self):
+        """Try to read NVIDIA GPU temperature"""
+        try:
+            result = subprocess.run(['nvidia-smi', '--query-gpu=temperature.gpu', '--format=csv,noheader,nounits'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                temp = float(result.stdout.strip())
+                if 20 <= temp <= 100:
+                    return temp
+        except Exception:
+            pass
+        return None
+    
+    def _try_amd_gpu(self):
+        """Try to read AMD GPU temperature"""
+        try:
+            # Try rocm-smi for AMD GPUs
+            result = subprocess.run(['rocm-smi', '--showtemp'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if 'GPU' in line and '°C' in line:
+                        # Parse temperature from AMD output
+                        parts = line.split()
+                        for part in parts:
+                            if part.endswith('°C'):
+                                temp_str = part[:-2]
+                                try:
+                                    temp = float(temp_str)
+                                    if 20 <= temp <= 100:
+                                        return temp
+                                except ValueError:
+                                    continue
+        except Exception:
+            pass
+        return None
     
     def _try_thermal_zone(self):
         """Try to read from thermal zone (Linux)"""
@@ -113,14 +208,14 @@ class CPUMonitor:
         return None
     
     def _try_sensors(self):
-        """Try to read from sensors command"""
+        """Try to read CPU temperature from sensors command"""
         try:
             result = subprocess.run(['sensors'], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 lines = result.stdout.split('\n')
                 for line in lines:
                     if 'Core 0' in line or 'Package id 0' in line or 'Tdie' in line:
-                        # Extract temperature from line like "Core 0: +45.0°C"
+                        # Extract temperature from line like "Core 0: +45.0°C" or "Package id 0: +45.0°C"
                         parts = line.split('+')
                         if len(parts) > 1:
                             temp_part = parts[1].split('°')[0]
@@ -148,27 +243,27 @@ class CPUMonitor:
         return None
     
     def start_monitoring(self, interval=2):
-        """Start monitoring CPU temperature"""
+        """Start monitoring temperature"""
         if self.is_monitoring:
             return
             
         self.is_monitoring = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop, args=(interval,), daemon=True)
         self.monitor_thread.start()
-        logging.info("CPU temperature monitoring started")
+        logging.info(f"Temperature monitoring started for source: {self.source}")
     
     def stop_monitoring(self):
-        """Stop monitoring CPU temperature"""
+        """Stop monitoring temperature"""
         self.is_monitoring = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=1)
-        logging.info("CPU temperature monitoring stopped")
+        logging.info("Temperature monitoring stopped")
     
     def _monitor_loop(self, interval):
         """Main monitoring loop"""
         while self.is_monitoring:
             try:
-                temp = self.get_cpu_temperature()
+                temp = self.get_temperature()
                 if temp != self.temperature:
                     self.temperature = temp
                     self._notify_callbacks(temp)
@@ -177,6 +272,6 @@ class CPUMonitor:
                 logging.error(f"Error in temperature monitoring loop: {e}")
                 time.sleep(interval)
     
-    def get_temperature(self):
+    def get_cached_temperature(self):
         """Get the last known temperature"""
         return self.temperature

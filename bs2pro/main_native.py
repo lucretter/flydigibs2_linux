@@ -22,30 +22,10 @@ try:
     from bs2pro.udev_manager import UdevRulesManager
 except ImportError:
     # Fallback for development - try relative imports
-    try:
-        from controller import BS2ProController
-        from config import ConfigManager
-        from gui_qt import create_qt_application  # PyQt6 GUI
-        from udev_manager import UdevRulesManager
-    except ImportError:
-        # Last resort - try importing from the same directory
-        import importlib.util
-        
-        def load_module_from_file(module_name, file_path):
-            spec = importlib.util.spec_from_file_location(module_name, file_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            return module
-        
-        controller_module = load_module_from_file('controller', os.path.join(current_dir, 'controller.py'))
-        config_module = load_module_from_file('config', os.path.join(current_dir, 'config.py'))
-        gui_qt_module = load_module_from_file('gui_qt', os.path.join(current_dir, 'gui_qt.py'))
-        udev_module = load_module_from_file('udev_manager', os.path.join(current_dir, 'udev_manager.py'))
-        
-        BS2ProController = controller_module.BS2ProController
-        ConfigManager = config_module.ConfigManager
-        create_qt_application = gui_qt_module.create_qt_application
-        UdevRulesManager = udev_module.UdevRulesManager
+    from controller import BS2ProController
+    from config import ConfigManager
+    from gui_qt import create_qt_application  # PyQt6 GUI
+    from udev_manager import UdevRulesManager
 
 RPM_COMMANDS = {
     1300: "5aa52605001405440000000000000000000000000000000000000000000000",

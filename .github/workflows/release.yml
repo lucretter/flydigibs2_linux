@@ -28,7 +28,8 @@ jobs:
           sudo apt-get install -y \
             ruby ruby-dev build-essential \
             libhidapi-hidraw0 libhidapi-libusb0 \
-            qt6-base-dev
+            qt6-base-dev \
+            lm-sensors
           sudo gem install --no-document fpm
 
 

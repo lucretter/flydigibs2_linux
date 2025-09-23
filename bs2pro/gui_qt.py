@@ -10,7 +10,7 @@ import logging
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QComboBox, QPushButton, QCheckBox, QGroupBox, QFrame, QSystemTrayIcon, QMenu, QMessageBox, QDialog, QScrollArea,
-    QLineEdit, QSpinBox, QStackedWidget
+    QLineEdit, QSpinBox
 )
 from PyQt6.QtCore import QTimer, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont, QPixmap, QAction, QColor, QMouseEvent
@@ -389,7 +389,7 @@ class TemperatureRPMGraph(QWidget):
             self.pointsChanged.emit()
             
         except Exception as e:
-            print(f"Error setting ranges: {e}")
+            logging.error(f"Error setting ranges: {e}")
             # Fall back to default points
             self.clear_points()
         
@@ -528,7 +528,7 @@ class SmartModeConfigDialog(QDialog):
         try:
             self.load_ranges()
         except Exception as e:
-            print(f"Error loading ranges: {e}")
+            logging.error(f"Error loading ranges: {e}")
             # Continue without loading ranges
             
     def create_graph_mode_widget(self):
@@ -1523,7 +1523,7 @@ class SmartModeConfigDialog(QDialog):
         try:
             self.load_ranges()
         except Exception as e:
-            print(f"Error loading ranges: {e}")
+            logging.error(f"Error loading ranges: {e}")
             # Continue without loading ranges
             
     def create_graph_mode_widget(self):
@@ -1615,7 +1615,7 @@ class SmartModeConfigDialog(QDialog):
                 # Convert ranges to graph points and load them
                 self.graph_widget.set_ranges(ranges)
         except Exception as e:
-            print(f"Error loading ranges into graph: {e}")
+            logging.error(f"Error loading ranges into graph: {e}")
             # Continue with default points
             
     def on_profile_changed(self):

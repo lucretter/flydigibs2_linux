@@ -25,6 +25,7 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - [python3-hidapi](https://packages.debian.org/search?keywords=python3-hidapi) (system package)
 - [python3-pyqt6](https://packages.debian.org/search?keywords=python3-pyqt6) (system package)
 - [qt6-qpa-plugins](https://packages.debian.org/search?keywords=qt6-qpa-plugins) (for native theming)
+- [lm-sensors](https://packages.debian.org/search?keywords=lm-sensors) (for individual CPU core temperature monitoring)
 - Flydigi BS2Pro (might work on other models, haven't tested)
 
 
@@ -66,9 +67,16 @@ chmod +x install.sh
 This will:
 
 - Set up a Python virtual environment  
-- Install dependencies  
+- Install dependencies (including lm-sensors for individual CPU core temperature monitoring)
 - Build the executable  
 - Install it to `/usr/bin/bs2pro_controller`  
+
+> **Note:** Individual CPU core temperature monitoring requires the `lm-sensors` package. The install script will attempt to install it automatically. If you prefer manual installation:
+> - Debian/Ubuntu: `sudo apt-get install lm-sensors`
+> - Fedora/RHEL: `sudo dnf install lm_sensors`
+> - Arch Linux: `sudo pacman -S lm_sensors`
+> 
+> If lm-sensors is not installed, the app will show a warning dialog at startup (with option to disable it) and core temperature options will be hidden from the temperature source selector.  
 
 ## 🔐 First Run Setup - udev Rules Prompt
 
