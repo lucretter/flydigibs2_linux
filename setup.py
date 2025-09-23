@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="bs2pro-controller",
-    version="2.5.0",  # Major smart mode improvements: graph mode, profiles, temperature sources
+    version="2.5.1",  # Fixed RPM package PyQt6 dependency name
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
