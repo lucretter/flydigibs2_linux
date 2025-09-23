@@ -41,7 +41,7 @@ fi
 
 # Ensure required Python packages are installed in venv
 echo "Installing required Python packages in venv..."
-pip install hid PyQt6  # Dependencies for PyQt6 GUI support
+pip install hid PyQt6 pyqtgraph  # Dependencies for PyQt6 GUI support
 
 # Install system dependencies for temperature monitoring
 echo "Installing system dependencies for temperature monitoring..."
@@ -66,6 +66,7 @@ pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" \
     --hidden-import=PyQt6.QtCore \
     --hidden-import=PyQt6.QtGui \
     --hidden-import=PyQt6.QtWidgets \
+    --hidden-import=pyqtgraph \
     --add-data "bs2pro/icon.png:." \
     --add-data "bs2pro/qt_tray_manager.py:." \
     --collect-all=PyQt6

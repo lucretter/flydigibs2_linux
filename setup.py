@@ -9,6 +9,7 @@ setup(
         "hidapi",
         "Pillow",
         "PyQt6",
+        "pyqtgraph",
     ],
     entry_points={
         "console_scripts": [
