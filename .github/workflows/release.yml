@@ -107,6 +107,7 @@ jobs:
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "python3" \
             -d "python3-pyqt6" \
+            -d "python3-numpy" \
             -d "python3-hidapi" \
             -d "hidapi" \
             -d "python3-tkinter" \
