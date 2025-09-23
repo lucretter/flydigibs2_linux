@@ -17,7 +17,6 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - 🧠 **Smart Mode** — Automatic fan control based on CPU temperature  
 - 📊 **Real-time RPM Monitoring** — Live display of actual fan RPM from the device  
 - 🗂️ **System Tray Integration** — Minimize to system tray with right-click menu
-- 🎨 **Native GUI Support** — PyQt6 with native desktop theming (KDE Breeze, GNOME Adwaita)
 - 🧪 **CLI Support** — Send commands directly via terminal 
 
 ## 📦 Requirements
