@@ -19,7 +19,6 @@ A Python desktop application for controlling BS2PRO units via HID interface.
 - 🗂️ **System Tray Integration** — Minimize to system tray with right-click menu
 - 🎨 **Native GUI Support** — PyQt6 with native desktop theming (KDE Breeze, GNOME Adwaita)
 - 🧪 **CLI Support** — Send commands directly via terminal 
-- ✅ **HID Compatibility** — Direct hidapi access for reliable device communication
 
 ## 📦 Requirements
 
@@ -145,21 +144,3 @@ Feel free to:
 - Report issues and bugs  
 - Suggest new features  
 - Submit pull requests  
-
-## 📝 Changelog
-
-### v2.4.4 (2025-01-27)
-- ✅ **Fixed HID Device Compatibility**: Implemented direct hidapi library access to resolve Device class destructor issues
-- 🔧 **Improved Device Communication**: Added fallback methods for different hidapi implementations
-- 🎨 **Enhanced System Integration**: Confirmed native desktop theming (KDE Breeze, GNOME Adwaita) working correctly
-- 📦 **System Package Dependencies**: Migrated to system-provided PyQt6 and hidapi packages for better compatibility
-- 🐛 **Bug Fixes**: Resolved "'Device' object has no attribute '_device'" errors in HID operations
-
-### v2.4.3 (Previous)
-- 🔧 Configuration system improvements
-- 🎨 PyQt6 theming enhancements
-
-### v2.4.0-2.4.2 (Previous)
-- 🖥️ Native PyQt6 GUI implementation
-- 🗂️ System tray integration
-- 📊 Real-time RPM monitoring
