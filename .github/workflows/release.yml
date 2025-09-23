@@ -50,7 +50,7 @@ jobs:
           # Copy the bs2pro module directly
           cp -r bs2pro/ package-files/opt/bs2pro-controller/
           
-          # Install Python dependencies to the target directory
+          # Install Python dependencies to the target directory (bundled for both .deb and .rpm)
           pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi Pillow pyqtgraph --no-deps
           
           # Create wrapper script that uses system Python and Qt
@@ -101,6 +101,9 @@ jobs:
 
       - name: Build .rpm with dependencies
         run: |
+          # Remove bundled PyQt6 for RPM (use system package instead)
+          rm -rf package-files/opt/bs2pro-controller/PyQt6*
+          
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "python3" \
             -d "python3-pyqt6" \
