@@ -28,6 +28,14 @@ except ImportError:
     except ImportError:
         hid = None
 
+# Also try to import hidapi directly for low-level access
+try:
+    import hidapi
+    HIDAPI_DIRECT = True
+except ImportError:
+    hidapi = None
+    HIDAPI_DIRECT = False
+
 class BS2ProController:
     def __init__(self):
         # Log hidapi information for debugging
@@ -88,13 +96,26 @@ class BS2ProController:
             if dev:
                 logging.debug("Using shared device for command")
                 payload = bytes.fromhex(hex_cmd)
-                dev.write(payload)
-                # Try with timeout first, fallback to without timeout
-                try:
-                    dev.read(32, timeout=1000)
-                except TypeError:
-                    # Some versions don't support timeout parameter
-                    dev.read(32)
+                
+                # Handle direct hidapi access
+                if isinstance(dev, dict) and dev.get('type') == 'direct':
+                    if HIDAPI_DIRECT:
+                        # Write the command
+                        bytes_written = hidapi.hidapi.hid_write(dev['handle'], payload, len(payload))
+                        if bytes_written > 0:
+                            # Read response
+                            response_buffer = hidapi.ffi.new("unsigned char[]", 32)
+                            bytes_read = hidapi.hidapi.hid_read_timeout(dev['handle'], response_buffer, 32, 1000)
+                            logging.debug(f"HID write: {bytes_written} bytes, read: {bytes_read} bytes")
+                else:
+                    # Regular hidapi device
+                    dev.write(payload)
+                    # Try with timeout first, fallback to without timeout
+                    try:
+                        dev.read(32, timeout=1000)
+                    except TypeError:
+                        # Some versions don't support timeout parameter
+                        dev.read(32)
             else:
                 # Fallback to creating temporary device
                 vid, pid = self.detect_bs2pro()
@@ -106,6 +127,25 @@ class BS2ProController:
                 
                 # Try different hidapi APIs based on version, starting with most compatible
                 device_opened = False
+                
+                # Method 0: Try direct hidapi low-level access (most reliable)
+                if HIDAPI_DIRECT and not device_opened:
+                    try:
+                        device_handle = hidapi.hidapi.hid_open(vid, pid, hidapi.ffi.NULL)
+                        if device_handle != hidapi.ffi.NULL:
+                            device_opened = True
+                            payload = bytes.fromhex(hex_cmd)
+                            # Write the command
+                            bytes_written = hidapi.hidapi.hid_write(device_handle, payload, len(payload))
+                            if bytes_written > 0:
+                                # Read response
+                                response_buffer = hidapi.ffi.new("unsigned char[]", 32)
+                                bytes_read = hidapi.hidapi.hid_read_timeout(device_handle, response_buffer, 32, 1000)
+                                logging.debug(f"HID write: {bytes_written} bytes, read: {bytes_read} bytes")
+                            hidapi.hidapi.hid_close(device_handle)
+                            logging.debug("Used direct hidapi low-level access successfully")
+                    except Exception as e:
+                        logging.debug(f"Direct hidapi access failed: {e}")
                 
                 # Method 1: Try hid.open() function first (most compatible)
                 if hasattr(hid, 'open') and not device_opened:
@@ -143,23 +183,7 @@ class BS2ProController:
                     except Exception as e:
                         logging.debug(f"hid.device() failed: {e}")
                 
-                # Method 3: Try Device class without keyword arguments
-                if hasattr(hid, 'Device') and not device_opened:
-                    try:
-                        dev = hid.Device()
-                        dev.open(vid, pid)
-                        device_opened = True
-                        payload = bytes.fromhex(hex_cmd)
-                        dev.write(payload)
-                        # Try with timeout first, fallback to without timeout
-                        try:
-                            dev.read(32, timeout=1000)
-                        except TypeError:
-                            # Some versions don't support timeout parameter
-                            dev.read(32)
-                        dev.close()
-                    except Exception as e:
-                        logging.debug(f"hid.Device() failed: {e}")
+                # Skip Method 3 (Device class) as it's broken on this system
                 
                 if not device_opened:
                     if status_callback:
@@ -191,6 +215,18 @@ class BS2ProController:
                     # Try different hidapi APIs, starting with most compatible
                     device_created = False
                     
+                    # Method 0: Try direct hidapi low-level access (most reliable)
+                    if HIDAPI_DIRECT and not device_created:
+                        try:
+                            device_handle = hidapi.hidapi.hid_open(vid, pid, hidapi.ffi.NULL)
+                            if device_handle != hidapi.ffi.NULL:
+                                # For shared device, we'll store the handle differently
+                                self.shared_device = {'handle': device_handle, 'type': 'direct'}
+                                device_created = True
+                                logging.debug("Created shared device with direct hidapi access")
+                        except Exception as e:
+                            logging.debug(f"Direct hidapi access failed: {e}")
+                    
                     # Method 1: Try hid.open() function first
                     if hasattr(hid, 'open') and not device_created:
                         try:
@@ -210,15 +246,7 @@ class BS2ProController:
                             logging.debug(f"hid.device() failed: {e}")
                             self.shared_device = None
                     
-                    # Method 3: Try Device class without keyword arguments
-                    if hasattr(hid, 'Device') and not device_created:
-                        try:
-                            self.shared_device = hid.Device()
-                            self.shared_device.open(vid, pid)
-                            device_created = True
-                        except Exception as e:
-                            logging.debug(f"hid.Device() failed: {e}")
-                            self.shared_device = None
+                    # Skip Method 3 (Device class) as it's broken on this system
                     
                     if not device_created or self.shared_device is None:
                         logging.error("Failed to create shared HID device with any method")
@@ -236,7 +264,12 @@ class BS2ProController:
         with self.device_lock:
             if self.shared_device:
                 try:
-                    if hasattr(self.shared_device, 'close'):
+                    # Handle direct hidapi access case
+                    if isinstance(self.shared_device, dict) and self.shared_device.get('type') == 'direct':
+                        if HIDAPI_DIRECT:
+                            hidapi.hidapi.hid_close(self.shared_device['handle'])
+                            logging.debug("Direct hidapi shared device closed")
+                    elif hasattr(self.shared_device, 'close'):
                         self.shared_device.close()
                     self.shared_device = None
                     logging.debug("Shared HID device released")

@@ -17,6 +17,16 @@ except ImportError:
     except ImportError:
         hid = None
 
+# Try to import direct hidapi access
+HIDAPI_DIRECT = False
+try:
+    import hidapi
+    if hasattr(hidapi, 'hidapi') and hasattr(hidapi, 'ffi'):
+        HIDAPI_DIRECT = True
+        logging.debug("Direct hidapi access available")
+except ImportError:
+    logging.debug("Direct hidapi access not available")
+
 class RPMMonitor:
     def __init__(self):
         self.is_monitoring = False
@@ -113,6 +123,19 @@ class RPMMonitor:
             # Try different hidapi APIs, starting with most compatible
             device_opened = False
             
+            # Method 0: Try direct hidapi low-level access (most reliable)
+            if HIDAPI_DIRECT and not device_opened:
+                try:
+                    logging.info("Using direct hidapi low-level access")
+                    device_handle = hidapi.hidapi.hid_open(self.vid, self.pid, hidapi.ffi.NULL)
+                    if device_handle != hidapi.ffi.NULL:
+                        # Store handle in a way compatible with monitoring code
+                        self.device = {'handle': device_handle, 'type': 'direct'}
+                        device_opened = True
+                        logging.info("Device opened successfully with direct hidapi access")
+                except Exception as e:
+                    logging.debug(f"Direct hidapi access failed: {e}")
+            
             # Method 1: Try hid.open() function first (most compatible)
             if hasattr(hid, 'open') and not device_opened:
                 try:
@@ -138,17 +161,7 @@ class RPMMonitor:
                     logging.debug(f"hid.device() failed: {e}")
                     self.device = None
             
-            # Method 3: Try Device class without keyword arguments
-            if hasattr(hid, 'Device') and not device_opened:
-                try:
-                    logging.info("Using hidapi Device() class")
-                    self.device = hid.Device()
-                    self.device.open(self.vid, self.pid)
-                    device_opened = True
-                    logging.info("Device opened successfully with Device() class")
-                except Exception as e:
-                    logging.debug(f"hid.Device() failed: {e}")
-                    self.device = None
+            # Skip Method 3 (Device class) as it's broken on this system
             
             if not device_opened:
                 logging.error("All HID device opening methods failed")
@@ -172,7 +185,11 @@ class RPMMonitor:
                     self.device = None
                 else:
                     # For direct devices, close them
-                    if hasattr(self.device, 'close'):
+                    if isinstance(self.device, dict) and self.device.get('type') == 'direct':
+                        if HIDAPI_DIRECT:
+                            hidapi.hidapi.hid_close(self.device['handle'])
+                            logging.debug("Direct hidapi device closed")
+                    elif hasattr(self.device, 'close'):
                         self.device.close()
                     self.device = None
                 logging.debug("HID device closed successfully")
@@ -284,8 +301,26 @@ class RPMMonitor:
                 # Try to read data from the device
                 try:
                     logging.debug("Attempting to read from device...")
-                    # Try with timeout first, fallback to without timeout
-                    if hasattr(self.device, 'read'):
+                    data = None
+                    
+                    # Handle direct hidapi access
+                    if isinstance(self.device, dict) and self.device.get('type') == 'direct':
+                        if HIDAPI_DIRECT:
+                            try:
+                                logging.debug("Trying read with direct hidapi access...")
+                                response_buffer = hidapi.ffi.new("unsigned char[]", 32)
+                                bytes_read = hidapi.hidapi.hid_read_timeout(self.device['handle'], response_buffer, 32, 1000)
+                                if bytes_read > 0:
+                                    data = bytes(hidapi.ffi.buffer(response_buffer, bytes_read))
+                                    logging.debug(f"Direct hidapi read completed, data: {data}")
+                                else:
+                                    logging.debug("No data received (direct hidapi timeout)")
+                            except Exception as e:
+                                logging.error(f"Direct hidapi read error: {e}")
+                                data = None
+                    
+                    # Handle regular hidapi objects
+                    elif hasattr(self.device, 'read'):
                         try:
                             logging.debug("Trying read with timeout...")
                             data = self.device.read(32, timeout=1000)  # 1000ms timeout
@@ -330,8 +365,21 @@ class RPMMonitor:
                         # No data received, try alternative approach
                         logging.debug("No data received, trying alternative read method...")
                         try:
-                            # Try reading without timeout
-                            if hasattr(self.device, 'read'):
+                            # Handle direct hidapi access for alternative read
+                            if isinstance(self.device, dict) and self.device.get('type') == 'direct':
+                                if HIDAPI_DIRECT:
+                                    response_buffer = hidapi.ffi.new("unsigned char[]", 32)
+                                    bytes_read = hidapi.hidapi.hid_read(self.device['handle'], response_buffer, 32)
+                                    if bytes_read > 0:
+                                        data = bytes(hidapi.ffi.buffer(response_buffer, bytes_read))
+                                        logging.debug(f"Raw data (direct hidapi no timeout): {data.hex()}")
+                                        rpm = self._decode_rpm_data(data)
+                                        if rpm is not None and rpm != self.current_rpm:
+                                            self.current_rpm = rpm
+                                            self._notify_callbacks(rpm)
+                                            logging.info(f"RPM updated: {rpm}")
+                            # Try reading without timeout for regular devices
+                            elif hasattr(self.device, 'read'):
                                 data = self.device.read(32)
                                 if data:
                                     # Convert list to bytes if necessary
