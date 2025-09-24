@@ -41,7 +41,7 @@ fi
 
 # Ensure required Python packages are installed in venv
 echo "Installing required Python packages in venv..."
-pip install hid PyQt6 pyqtgraph  # Dependencies for PyQt6 GUI support
+pip install hidapi PyQt6 pyqtgraph  # Dependencies for PyQt6 GUI support
 
 # Install system dependencies for temperature monitoring
 echo "Installing system dependencies for temperature monitoring..."

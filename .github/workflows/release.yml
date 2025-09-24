@@ -27,7 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             ruby ruby-dev build-essential \
-            libhidapi-hidraw0 libhidapi-libusb0 \
+            libhidapi-hidraw0 libhidapi-libusb0 libhidapi-dev \
             qt6-base-dev \
             lm-sensors
           sudo gem install --no-document fpm
@@ -51,7 +51,7 @@ jobs:
           cp -r bs2pro/ package-files/opt/bs2pro-controller/
           
           # Install Python dependencies to the target directory (bundled for both .deb and .rpm)
-          pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi Pillow pyqtgraph --no-deps
+          pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi Pillow pyqtgraph
           
           # Create wrapper script that uses system Python and Qt
           cat > package-files/usr/bin/bs2pro_controller << 'EOF'
