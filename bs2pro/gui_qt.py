@@ -1414,7 +1414,7 @@ class BS2ProQtGUI(QMainWindow):
         
     def update_device_status(self):
         """Update device status display"""
-        vid, pid = self.controller.detect_bs2pro()
+        vid, pid, device_path = self.controller.detect_bs2pro()
         if vid and pid:
             self.update_status(f"✅ BS2PRO detected (VID: {hex(vid)}, PID: {hex(pid)})", "#28a745")
         else:

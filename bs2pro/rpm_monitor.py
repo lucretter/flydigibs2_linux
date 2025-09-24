@@ -75,17 +75,21 @@ class RPMMonitor:
             devices = hid.enumerate()
             for d in devices:
                 # Handle both dictionary-style and attribute-style access for different hidapi versions
-                try:
-                    # Try attribute access first (newer hidapi)
-                    product_string = getattr(d, 'product_string', '')
-                    vendor_id = getattr(d, 'vendor_id', None)
-                    product_id = getattr(d, 'product_id', None)
-                except (AttributeError, TypeError):
-                    # Fallback to dictionary access (older hidapi)
+                product_string = ""
+                vendor_id = None
+                product_id = None
+                
+                # Check if it's a dictionary (most common case)
+                if isinstance(d, dict):
+                    product_string = d.get("product_string", "")
+                    vendor_id = d.get("vendor_id")
+                    product_id = d.get("product_id")
+                else:
+                    # Try attribute access for object-style access
                     try:
-                        product_string = d.get("product_string", "")
-                        vendor_id = d.get("vendor_id")
-                        product_id = d.get("product_id")
+                        product_string = getattr(d, 'product_string', '')
+                        vendor_id = getattr(d, 'vendor_id', None)
+                        product_id = getattr(d, 'product_id', None)
                     except (AttributeError, TypeError):
                         # Skip this device if we can't access its info
                         continue
@@ -322,8 +326,8 @@ class RPMMonitor:
                     # Handle regular hidapi objects
                     elif hasattr(self.device, 'read'):
                         try:
-                            logging.debug("Trying read with timeout...")
-                            data = self.device.read(32, timeout=1000)  # 1000ms timeout
+                            logging.debug("Trying read without timeout...")
+                            data = self.device.read(32)  # No timeout parameter
                             logging.debug(f"Read completed, data: {data}")
                             if data:
                                 # Convert list to bytes if necessary
@@ -331,19 +335,7 @@ class RPMMonitor:
                                     data = bytes(data)
                                 logging.debug(f"Raw data: {data.hex()}")
                             else:
-                                logging.debug("No data received (timeout)")
-                        except TypeError:
-                            # Some versions don't support timeout parameter
-                            logging.debug("Timeout not supported, trying without timeout...")
-                            data = self.device.read(32)
-                            logging.debug(f"Read completed, data: {data}")
-                            if data:
-                                # Convert list to bytes if necessary
-                                if isinstance(data, list):
-                                    data = bytes(data)
-                                logging.debug(f"Raw data: {data.hex()}")
-                            else:
-                                logging.debug("No data received (no timeout)")
+                                logging.debug("No data received")
                         except Exception as e:
                             logging.error(f"Read error: {e}")
                             data = None

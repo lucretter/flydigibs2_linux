@@ -126,7 +126,7 @@ def detect_desktop_environment():
 def check_and_prompt_udev_rules(controller, config_manager):
     """Check if udev rules are needed and prompt user if necessary"""
     # Detect device to get vendor and product IDs
-    vid, pid = controller.detect_bs2pro()
+    vid, pid, device_path = controller.detect_bs2pro()
     
     if vid is None or pid is None:
         logging.warning("BS2PRO device not detected, skipping udev check")

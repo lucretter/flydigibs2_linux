@@ -43,30 +43,37 @@ class BS2ProController:
     def detect_bs2pro(self):
         if hid is None:
             logging.error("HID library not available")
-            return None, None
+            return None, None, None
         
         try:
             devices = hid.enumerate()
             for d in devices:
                 # Handle both dictionary-style and attribute-style access for different hidapi versions
-                try:
-                    # Try attribute access first (newer hidapi)
-                    product_string = getattr(d, 'product_string', '')
-                    vendor_id = getattr(d, 'vendor_id', None)
-                    product_id = getattr(d, 'product_id', None)
-                except (AttributeError, TypeError):
-                    # Fallback to dictionary access (older hidapi)
+                product_string = ""
+                vendor_id = None
+                product_id = None
+                device_path = None
+                
+                # Check if it's a dictionary (most common case)
+                if isinstance(d, dict):
+                    product_string = d.get("product_string", "")
+                    vendor_id = d.get("vendor_id")
+                    product_id = d.get("product_id")
+                    device_path = d.get("path")
+                else:
+                    # Try attribute access for object-style access
                     try:
-                        product_string = d.get("product_string", "")
-                        vendor_id = d.get("vendor_id")
-                        product_id = d.get("product_id")
+                        product_string = getattr(d, 'product_string', '')
+                        vendor_id = getattr(d, 'vendor_id', None)
+                        product_id = getattr(d, 'product_id', None)
+                        device_path = getattr(d, 'path', None)
                     except (AttributeError, TypeError):
                         # Skip this device if we can't access its info
                         continue
                 
                 if product_string and "BS2PRO" in product_string:
-                    return vendor_id, product_id
-            return None, None
+                    return vendor_id, product_id, device_path
+            return None, None, None
         except Exception as e:
             logging.error(f"Error enumerating HID devices: {e}")
             return None, None
@@ -106,7 +113,7 @@ class BS2ProController:
                         dev.read(32)
             else:
                 # Fallback to creating temporary device
-                vid, pid = self.detect_bs2pro()
+                vid, pid, device_path = self.detect_bs2pro()
                 if vid is None or pid is None:
                     if status_callback:
                         status_callback("❌ BS2PRO device not found", "danger")
@@ -116,7 +123,25 @@ class BS2ProController:
                 # Try different hidapi APIs based on version, starting with most compatible
                 device_opened = False
                 
-                # Method 0: Try direct hidapi low-level access (most reliable)
+                # Method 0: Try device() constructor with path (most reliable for BS2Pro)
+                if hasattr(hid, 'device') and device_path and not device_opened:
+                    try:
+                        dev = hid.device()
+                        dev.open_path(device_path)
+                        device_opened = True
+                        payload = bytes.fromhex(hex_cmd)
+                        dev.write(payload)
+                        # Try without timeout since this hidapi version doesn't support it
+                        try:
+                            dev.read(32)
+                        except Exception:
+                            pass  # Read may not be necessary for command sending
+                        dev.close()
+                        logging.debug("Used device() + open_path() successfully")
+                    except Exception as e:
+                        logging.debug(f"device() + open_path() failed: {e}")
+                
+                # Method 1: Try direct hidapi low-level access
                 if HIDAPI_DIRECT and not device_opened:
                     try:
                         device_handle = hidapi.hidapi.hid_open(vid, pid, hidapi.ffi.NULL)
@@ -135,7 +160,7 @@ class BS2ProController:
                     except Exception as e:
                         logging.debug(f"Direct hidapi access failed: {e}")
                 
-                # Method 1: Try hid.open() function first (most compatible)
+                # Method 2: Try hid.open() function
                 if hasattr(hid, 'open') and not device_opened:
                     try:
                         dev = hid.open(vid, pid)
@@ -153,7 +178,7 @@ class BS2ProController:
                     except Exception as e:
                         logging.debug(f"hid.open() failed: {e}")
                 
-                # Method 2: Try lowercase device() class
+                # Method 3: Try device().open() (traditional approach)
                 if hasattr(hid, 'device') and not device_opened:
                     try:
                         dev = hid.device()
@@ -169,9 +194,9 @@ class BS2ProController:
                             dev.read(32)
                         dev.close()
                     except Exception as e:
-                        logging.debug(f"hid.device() failed: {e}")
+                        logging.debug(f"hid.device().open() failed: {e}")
                 
-                # Skip Method 3 (Device class) as it's broken on this system
+                # Skip Method 4 (Device class) as it's broken on this system
                 
                 if not device_opened:
                     if status_callback:
@@ -194,16 +219,28 @@ class BS2ProController:
         with self.device_lock:
             if self.shared_device is None:
                 try:
-                    vid, pid = self.detect_bs2pro()
+                    vid, pid, device_path = self.detect_bs2pro()
                     if vid is None or pid is None:
                         return None
                     
                     logging.debug(f"Creating shared HID device VID={vid:04x}, PID={pid:04x}")
+                    if device_path:
+                        logging.debug(f"Device path: {device_path}")
                     
                     # Try different hidapi APIs, starting with most compatible
                     device_created = False
                     
-                    # Method 0: Try direct hidapi low-level access (most reliable)
+                    # Method 0: Try device() constructor with path (most reliable for BS2Pro)
+                    if hasattr(hid, 'device') and device_path and not device_created:
+                        try:
+                            self.shared_device = hid.device()
+                            self.shared_device.open_path(device_path)
+                            device_created = True
+                            logging.debug("Created shared device with device() + open_path()")
+                        except Exception as e:
+                            logging.debug(f"device() + open_path() failed: {e}")
+                    
+                    # Method 1: Try direct hidapi low-level access
                     if HIDAPI_DIRECT and not device_created:
                         try:
                             device_handle = hidapi.hidapi.hid_open(vid, pid, hidapi.ffi.NULL)
@@ -215,23 +252,25 @@ class BS2ProController:
                         except Exception as e:
                             logging.debug(f"Direct hidapi access failed: {e}")
                     
-                    # Method 1: Try hid.open() function first
+                    # Method 2: Try hid.open() function
                     if hasattr(hid, 'open') and not device_created:
                         try:
                             self.shared_device = hid.open(vid, pid)
                             if self.shared_device is not None:
                                 device_created = True
+                                logging.debug("Created shared device with hid.open()")
                         except Exception as e:
                             logging.debug(f"hid.open() failed: {e}")
                     
-                    # Method 2: Try lowercase device() class
+                    # Method 3: Try device().open() (traditional approach)
                     if hasattr(hid, 'device') and not device_created:
                         try:
                             self.shared_device = hid.device()
                             self.shared_device.open(vid, pid)
                             device_created = True
+                            logging.debug("Created shared device with device().open()")
                         except Exception as e:
-                            logging.debug(f"hid.device() failed: {e}")
+                            logging.debug(f"hid.device().open() failed: {e}")
                             self.shared_device = None
                     
                     # Skip Method 3 (Device class) as it's broken on this system
