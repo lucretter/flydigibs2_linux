@@ -51,7 +51,8 @@ jobs:
           cp -r bs2pro/ package-files/opt/bs2pro-controller/
           
           # Install Python dependencies to the target directory (bundled for both .deb and .rpm)
-          pip install --target package-files/opt/bs2pro-controller PyQt6 hidapi Pillow pyqtgraph
+          # Use system packages for major dependencies to avoid version conflicts
+          pip install --target package-files/opt/bs2pro-controller Pillow --no-deps
           
           # Create wrapper script that uses system Python and Qt
           cat > package-files/usr/bin/bs2pro_controller << 'EOF'
@@ -85,6 +86,9 @@ jobs:
           fpm -s dir -t deb -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
             -d "python3" \
             -d "python3-pyqt6" \
+            -d "python3-pyqtgraph" \
+            -d "python3-numpy" \
+            -d "python3-hidapi" \
             -d "libhidapi-hidraw0" \
             -d "libhidapi-libusb0" \
             -d "python3-tk" \
@@ -101,18 +105,17 @@ jobs:
 
       - name: Build .rpm with dependencies
         run: |
-          # Remove bundled PyQt6 for RPM (use system package instead)
-          rm -rf package-files/opt/bs2pro-controller/PyQt6*
+          # For RPM, bundle hidapi since package names vary across RPM distros
+          pip install --target package-files/opt/bs2pro-controller hidapi --no-deps
           
           fpm -s dir -t rpm -n bs2pro-controller -v "${GITHUB_REF_NAME#v}" \
-            -d "python3" \
+            -d "python3 >= 3.8" \
             -d "python3-pyqt6" \
+            -d "python3-pyqtgraph" \
             -d "python3-numpy" \
-            -d "python3-hidapi" \
             -d "hidapi" \
             -d "python3-tkinter" \
             -d "qt6-qtbase" \
-            -d "breeze-icon-theme" \
             --description "Controller for BS2PRO devices with native Qt6 GUI and cross-desktop theming" \
             --url "https://github.com/lucretter/flydigibs2_linux" \
             --maintainer "Lucretter" \

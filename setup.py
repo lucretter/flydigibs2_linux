@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="bs2pro-controller",
-        version="2.5.2",  # Fixed RPM numpy dependency for pyqtgraph
+        version="2.5.3",  # Fixed numpy dependency bundling issue
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
