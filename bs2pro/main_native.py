@@ -237,15 +237,16 @@ def main():
     
     # Handle CLI args first (before any GUI stuff) and get verbose flag
     verbose = handle_cli_args(controller, config_manager)
-    
-    print("🖥️  Using PyQt6 GUI framework")
+    # Log a concise startup summary (includes HID availability and device detection)
+    controller.startup_summary()
+    logging.info("Using PyQt6 GUI framework")
     
     # Check and prompt for udev rules if needed
     check_and_prompt_udev_rules(controller, config_manager)
     
     # Start PyQt6 GUI
     try:
-        print("🎨 Starting PyQt6 GUI with native system theming...")
+        logging.info("Starting PyQt6 GUI with native theming")
         create_qt_application(controller, config_manager, RPM_COMMANDS, COMMANDS, DEFAULT_SETTINGS, ICON_PATH)
     except ImportError as e:
         print(f"❌ PyQt6 not available ({e}). Please install: sudo apt install python3-pyqt6")

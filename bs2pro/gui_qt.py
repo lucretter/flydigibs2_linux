@@ -2142,12 +2142,14 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
     # Set Qt plugin path environment variable
     if qt_plugin_paths:
         os.environ['QT_PLUGIN_PATH'] = ':'.join(qt_plugin_paths)
-        print(f"🔌 Qt Plugin Path: {os.environ.get('QT_PLUGIN_PATH')}")
-    else:
-        print("⚠️  No Qt plugin paths found")
-        
-    print(f"🔌 Platform Theme: {os.environ.get('QT_QPA_PLATFORMTHEME')}")
-    print(f"🔌 Platform: {os.environ.get('QT_QPA_PLATFORM')}")
+    # Log a concise Qt environment summary instead of many individual prints
+    qt_summary = {
+        'plugin_paths': os.environ.get('QT_PLUGIN_PATH'),
+        'platform_theme': os.environ.get('QT_QPA_PLATFORMTHEME'),
+        'platform': os.environ.get('QT_QPA_PLATFORM')
+    }
+    logging.info(f"Qt environment: plugin_paths={qt_summary['plugin_paths']}, "
+                 f"platform_theme={qt_summary['platform_theme']}, platform={qt_summary['platform']}")
     
     # Create QApplication if it doesn't exist
     app = QApplication.instance()
@@ -2157,79 +2159,61 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
     # Force system plugin paths, not venv paths - use detected paths
     if qt_plugin_paths:
         app.setLibraryPaths(qt_plugin_paths)
-        print(f"🔌 App library paths set to: {app.libraryPaths()}")
-    else:
-        print("⚠️  Using default library paths")
+        logging.debug(f"Qt app library paths set to: {app.libraryPaths()}")
         
     # Set application properties
     app.setApplicationName("BS2PRO Controller")
     app.setApplicationVersion("2.4.0")
     app.setOrganizationName("BS2PRO")
     
-    # Debug: Print current style information
-    print(f"🎨 Initial Qt Style: {app.style().objectName()}")
+    # Debug: store current style information, log concisely
+    current_style_name = app.style().objectName()
+    logging.debug(f"Initial Qt style: {current_style_name}")
     
     try:
         from PyQt6.QtWidgets import QStyleFactory
         available_styles = QStyleFactory.keys()
-        print(f"🎨 Available Styles: {', '.join(available_styles)}")
-        
+
         # Try to detect and set the appropriate native style
         import os
         desktop_env = os.environ.get('XDG_CURRENT_DESKTOP', '').lower()
-        print(f"🖥️  Desktop Environment: {desktop_env}")
-        
+        logging.debug(f"Desktop Environment detected: {desktop_env}")
+
         # Add detected Qt plugin paths
         for plugin_path in qt_plugin_paths:
             if os.path.exists(plugin_path):
                 app.addLibraryPath(plugin_path)
-                print(f"🔌 Added Qt plugin path: {plugin_path}")
-        
+                logging.debug(f"Added Qt plugin path: {plugin_path}")
+
         # Refresh available styles after adding plugin paths
         available_styles = QStyleFactory.keys()
-        print(f"🎨 Updated Available Style Keys: {', '.join(available_styles)}")
-        
+        logging.debug(f"Available Qt styles: {', '.join(available_styles)}")
+
         # Try to set native style based on desktop environment
         style_set_successfully = False
-        
-        # First, let Qt try to use the system's native theme automatically
-        print(f"🎨 Attempting to use native system theme...")
-        
-        # Don't force any specific style - let Qt choose the best one for the system
-        # Qt will automatically use the appropriate style based on:
-        # - The desktop environment
-        # - System theme settings
-        # - Available platform plugins
-        
-        # Only intervene if the default choice is clearly suboptimal or for specific DE needs
+
         current_style = app.style().objectName().lower()
-        
+
         if 'gnome' in desktop_env:
             # For GNOME, prefer system theme integration
             # If no GTK integration is available, Fusion is acceptable for GNOME
-            if current_style in ['windows']:
-                # Windows style is not appropriate for GNOME
-                if 'Fusion' in available_styles:
-                    try:
-                        fusion_style = QStyleFactory.create('Fusion')
-                        if fusion_style:
-                            app.setStyle(fusion_style)
-                            print("🎨 Set Fusion style for GNOME (good libadwaita-like appearance)")
-                            
-                            # Apply dark palette if GNOME is in dark mode
-                            if os.environ.get('GTK_THEME', '').endswith(':dark'):
-                                apply_gnome_dark_palette(app)
-                            
-                            style_set_successfully = True
-                    except Exception as e:
-                        print(f"🔍 Could not set Fusion style: {e}")
+            if current_style in ['windows'] and 'Fusion' in available_styles:
+                try:
+                    fusion_style = QStyleFactory.create('Fusion')
+                    if fusion_style:
+                        app.setStyle(fusion_style)
+                        logging.info("Set Fusion style for GNOME (good libadwaita-like appearance)")
+                        # Apply dark palette if GNOME is in dark mode
+                        if os.environ.get('GTK_THEME', '').endswith(':dark'):
+                            apply_gnome_dark_palette(app)
+                        style_set_successfully = True
+                except Exception as e:
+                    logging.debug(f"Could not set Fusion style: {e}")
             else:
-                print(f"🎨 Using system-chosen style for GNOME: {current_style}")
-                
+                logging.info(f"Using system-chosen Qt style for GNOME: {current_style}")
                 # Apply dark palette if in dark mode, regardless of style
                 if os.environ.get('GTK_THEME', '').endswith(':dark'):
                     apply_gnome_dark_palette(app)
-                
                 style_set_successfully = True
         elif current_style == 'windows' and 'Fusion' in available_styles:
             # Windows style is usually not desirable on Linux - prefer Fusion
@@ -2237,19 +2221,19 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
                 fusion_style = QStyleFactory.create('Fusion')
                 if fusion_style:
                     app.setStyle(fusion_style)
-                    print("🎨 Upgraded from Windows style to Fusion for better Linux experience")
+                    logging.info("Upgraded from Windows style to Fusion for better Linux experience")
                     style_set_successfully = True
             except Exception as e:
-                print(f"🔍 Could not set Fusion style: {e}")
+                logging.debug(f"Could not set Fusion style: {e}")
         else:
             # Let the system theme take precedence
-            print(f"🎨 Using system-chosen style: {current_style}")
+            logging.info(f"Using system-chosen Qt style: {current_style}")
             style_set_successfully = True
-        
+
         # Final verification
         final_style = app.style().objectName()
-        print(f"🎨 Active Qt Style: {final_style}")
-        
+        logging.info(f"Active Qt style: {final_style}")
+
         # If no style was set successfully, ensure we at least have Fusion (better than Windows)
         if not style_set_successfully and final_style.lower() == 'windows':
             if 'Fusion' in available_styles:
@@ -2257,12 +2241,11 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
                     fusion_style = QStyleFactory.create('Fusion')
                     if fusion_style:
                         app.setStyle(fusion_style)
-                        print("🎨 Applied Fusion as fallback (better than Windows style)")
+                        logging.info("Applied Fusion as fallback (better than Windows style)")
                 except Exception:
                     pass
-        
     except Exception as e:
-        print(f"🎨 Could not get/set style info: {e}")
+        logging.debug(f"Could not get/set Qt style info: {e}")
     
     # Enable automatic high DPI scaling (if available in this PyQt6 version)
     try:

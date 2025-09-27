@@ -26,11 +26,22 @@ except ImportError:
 
 class BS2ProController:
     def __init__(self):
-        # Log hidapi information for debugging
-        if hid is not None:
-            logging.info(f"HID library loaded: {hid.__file__ if hasattr(hid, '__file__') else 'unknown location'}")
-            logging.info(f"HID version: {hid.__version__ if hasattr(hid, '__version__') else 'unknown'}")
-            logging.info(f"HID attributes: {[attr for attr in dir(hid) if not attr.startswith('_')]}")
+        # Collect HID library metadata (keep logs concise)
+        self.hid_info = {
+            'available': hid is not None,
+            'module': getattr(hid, '__name__', None) if hid is not None else None,
+            'location': getattr(hid, '__file__', None) if hid is not None else None,
+            'version': getattr(hid, '__version__', None) if hid is not None else None,
+            'direct_hidapi': HIDAPI_DIRECT,
+        }
+
+        if self.hid_info['available']:
+            # Keep this at DEBUG level so normal startup stays concise
+            logging.debug(
+                f"HID library available: module={self.hid_info['module']} "
+                f"version={self.hid_info['version'] or 'unknown'} "
+                f"location={self.hid_info['location'] or 'unknown'}"
+            )
         else:
             logging.warning("HID library not available")
         
@@ -72,11 +83,49 @@ class BS2ProController:
                         continue
                 
                 if product_string and "BS2PRO" in product_string:
+                    # Log a concise detection message
+                    try:
+                        vid_hex = f"0x{vendor_id:04x}" if vendor_id is not None else str(vendor_id)
+                        pid_hex = f"0x{product_id:04x}" if product_id is not None else str(product_id)
+                    except Exception:
+                        vid_hex = vendor_id
+                        pid_hex = product_id
+                    logging.info(f"BS2Pro device detected: VID={vid_hex}, PID={pid_hex}, path={device_path}")
                     return vendor_id, product_id, device_path
             return None, None, None
         except Exception as e:
             logging.error(f"Error enumerating HID devices: {e}")
-            return None, None
+            return None, None, None
+
+    def startup_summary(self):
+        """Log a concise startup summary with important runtime info.
+
+        This avoids spamming the normal logs with repetitive Qt/debug info
+        while surfacing the most important bits (HID availability and
+        detected device info).
+        """
+        lines = []
+        lines.append("Application startup summary:")
+        lines.append(f"  HID library: {'available' if self.hid_info['available'] else 'missing'}")
+        if self.hid_info['available']:
+            lines.append(f"    module: {self.hid_info['module']}")
+            lines.append(f"    version: {self.hid_info['version'] or 'unknown'}")
+            if self.hid_info['location']:
+                lines.append(f"    location: {self.hid_info['location']}")
+        lines.append(f"  HIDAPI direct available: {HIDAPI_DIRECT}")
+
+        vid, pid, path = self.detect_bs2pro()
+        if vid is not None and pid is not None:
+            try:
+                lines.append(f"  BS2Pro device: VID=0x{vid:04x}, PID=0x{pid:04x}")
+            except Exception:
+                lines.append(f"  BS2Pro device: VID={vid}, PID={pid}")
+            if path:
+                lines.append(f"    path: {path}")
+        else:
+            lines.append("  BS2Pro device: not detected")
+
+        logging.info('\n'.join(lines))
 
     def send_command(self, hex_cmd, status_callback=None):
         if hid is None:
