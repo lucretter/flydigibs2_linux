@@ -8,6 +8,9 @@
 
 A Python desktop application for controlling BS2PRO units via HID interface.
 
+<img width="582" height="739" alt="image" src="https://github.com/user-attachments/assets/48680917-3a7f-4ab5-b63b-8ed5258e45ce" />
+<img width="582" height="739" alt="image" src="https://github.com/user-attachments/assets/b8f8f8bc-803c-4133-aabd-e1bf5aa141a1" />
+
 ## ✨ Features
 
 - 🔧 **Fan Speed Control** — Select RPM values from 1300 to 2700  
