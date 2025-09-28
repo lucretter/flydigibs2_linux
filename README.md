@@ -74,13 +74,6 @@ This will:
 - Build the executable  
 - Install it to `/usr/bin/bs2pro_controller`  
 
-> **Note:** Individual CPU core temperature monitoring requires the `lm-sensors` package. The install script will attempt to install it automatically. If you prefer manual installation:
-> - Debian/Ubuntu: `sudo apt-get install lm-sensors`
-> - Fedora/RHEL: `sudo dnf install lm_sensors`
-> - Arch Linux: `sudo pacman -S lm_sensors`
-> 
-> If lm-sensors is not installed, the app will show a warning dialog at startup (with option to disable it) and core temperature options will be hidden from the temperature source selector.  
-
 ## 🔐 First Run Setup - udev Rules Prompt
 
 On first launch, the application will automatically detect your BS2PRO device and prompt you to install udev rules if necessary.
