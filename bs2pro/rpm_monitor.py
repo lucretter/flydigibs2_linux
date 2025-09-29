@@ -293,14 +293,24 @@ class RPMMonitor:
         
         while self.is_monitoring:
             try:
-                if self.device is None:
-                    logging.info("Device not open, attempting to open...")
-                    if not self._open_device():
-                        logging.warning("Failed to open device, retrying in 1 second...")
-                        time.sleep(1)
+                # Get shared device for this read cycle
+                if self.get_shared_device_func:
+                    self.device = self.get_shared_device_func()
+                    if self.device is None:
+                        logging.debug("Shared device not available, retrying in 0.1 second...")
+                        time.sleep(0.1)
                         continue
-                    else:
-                        logging.info("Device opened successfully")
+                    logging.debug("Got shared device for RPM read")
+                else:
+                    # Fallback to opening device if no shared device function
+                    if self.device is None:
+                        logging.info("Device not open, attempting to open...")
+                        if not self._open_device():
+                            logging.warning("Failed to open device, retrying in 1 second...")
+                            time.sleep(1)
+                            continue
+                        else:
+                            logging.info("Device opened successfully")
                 
                 # Try to read data from the device
                 try:
@@ -396,6 +406,12 @@ class RPMMonitor:
             except Exception as e:
                 logging.error(f"Error in monitoring loop: {e}")
                 time.sleep(1)
+            
+            # Release shared device after each read cycle
+            if self.release_shared_device_func and self.device:
+                self.release_shared_device_func()
+                self.device = None
+                logging.debug("Released shared device after RPM read")
             
             time.sleep(interval)
         

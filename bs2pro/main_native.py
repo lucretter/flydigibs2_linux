@@ -202,25 +202,33 @@ def handle_cli_args(controller, config_manager):
     # Handle commands if provided
     if args.command:
         arg = args.command.lower()
-        if arg.startswith("rpm_"):
+        if arg in COMMANDS:
+            cmd = COMMANDS[arg]
+            success = True
+            if isinstance(cmd, list):
+                for c in cmd:
+                    if not controller.send_command(c):
+                        success = False
+                        break
+            else:
+                success = controller.send_command(cmd)
+            if success:
+                print(f"✅ Command '{arg}' sent.")
+            else:
+                print(f"❌ Failed to send command '{arg}'.")
+        elif arg.startswith("rpm_"):
             try:
                 rpm_value = int(arg.split("_")[1])
                 if rpm_value in RPM_COMMANDS:
-                    controller.send_command(RPM_COMMANDS[rpm_value])
-                    config_manager.save_setting("last_rpm", rpm_value)
-                    print(f"✅ RPM set to {rpm_value}")
+                    if controller.send_command(RPM_COMMANDS[rpm_value]):
+                        config_manager.save_setting("last_rpm", rpm_value)
+                        print(f"✅ RPM set to {rpm_value}")
+                    else:
+                        print(f"❌ Failed to set RPM to {rpm_value}")
                 else:
                     print(f"❌ Unsupported RPM value: {rpm_value}")
             except ValueError:
                 print("❌ Invalid RPM format. Use: rpm_1300, rpm_2700, etc.")
-        elif arg in COMMANDS:
-            cmd = COMMANDS[arg]
-            if isinstance(cmd, list):
-                for c in cmd:
-                    controller.send_command(c)
-            else:
-                controller.send_command(cmd)
-            print(f"✅ Command '{arg}' sent.")
         else:
             print(f"❌ Unknown command: {arg}")
         sys.exit(0)

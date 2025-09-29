@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 
 # Import RPM monitor with fallback for packaging
 try:
@@ -134,86 +135,106 @@ class BS2ProController:
             logging.error("HID library not available")
             return False
             
-        try:
-            # Use shared device if available, otherwise create temporary one
-            dev = self._get_shared_device()
-            if dev:
-                logging.debug("Using shared device for command")
-                payload = bytes.fromhex(hex_cmd)
-                
-                # Handle direct hidapi access
-                if isinstance(dev, dict) and dev.get('type') == 'direct':
-                    if HIDAPI_DIRECT:
-                        # Write the command
-                        bytes_written = hidapi.hidapi.hid_write(dev['handle'], payload, len(payload))
-                        if bytes_written > 0:
-                            # Read response
-                            response_buffer = hidapi.ffi.new("unsigned char[]", 32)
-                            bytes_read = hidapi.hidapi.hid_read_timeout(dev['handle'], response_buffer, 32, 1000)
-                            logging.debug(f"HID write: {bytes_written} bytes, read: {bytes_read} bytes")
-                else:
-                    # Regular hidapi device
-                    dev.write(payload)
-                    # Try with timeout first, fallback to without timeout
-                    try:
-                        dev.read(32, timeout=1000)
-                    except TypeError:
-                        # Some versions don't support timeout parameter
-                        dev.read(32)
-            else:
-                # Fallback to creating temporary device
-                vid, pid, device_path = self.detect_bs2pro()
-                if vid is None or pid is None:
-                    if status_callback:
-                        status_callback("❌ BS2PRO device not found", "danger")
-                    logging.error("BS2PRO device not found.")
-                    return False
-                
-                # Try different hidapi APIs based on version, starting with most compatible
-                device_opened = False
-                
-                # Method 0: Try device() constructor with path (most reliable for BS2Pro)
-                if hasattr(hid, 'device') and device_path and not device_opened:
-                    try:
-                        dev = hid.device()
-                        dev.open_path(device_path)
-                        device_opened = True
-                        payload = bytes.fromhex(hex_cmd)
-                        dev.write(payload)
-                        # Try without timeout since this hidapi version doesn't support it
-                        try:
-                            dev.read(32)
-                        except Exception:
-                            pass  # Read may not be necessary for command sending
-                        dev.close()
-                        logging.debug("Used device() + open_path() successfully")
-                    except Exception as e:
-                        logging.debug(f"device() + open_path() failed: {e}")
-                
-                # Method 1: Try direct hidapi low-level access
-                if HIDAPI_DIRECT and not device_opened:
-                    try:
-                        device_handle = hidapi.hidapi.hid_open(vid, pid, hidapi.ffi.NULL)
-                        if device_handle != hidapi.ffi.NULL:
-                            device_opened = True
-                            payload = bytes.fromhex(hex_cmd)
+        # Retry logic for device access conflicts
+        for attempt in range(5):
+            try:
+                # Use shared device if available, otherwise create temporary one
+                dev = self._get_shared_device()
+                if dev:
+                    logging.debug("Using shared device for command")
+                    payload = bytes.fromhex(hex_cmd)
+                    
+                    # Handle direct hidapi access
+                    if isinstance(dev, dict) and dev.get('type') == 'direct':
+                        if HIDAPI_DIRECT:
                             # Write the command
-                            bytes_written = hidapi.hidapi.hid_write(device_handle, payload, len(payload))
+                            bytes_written = hidapi.hidapi.hid_write(dev['handle'], payload, len(payload))
                             if bytes_written > 0:
                                 # Read response
                                 response_buffer = hidapi.ffi.new("unsigned char[]", 32)
-                                bytes_read = hidapi.hidapi.hid_read_timeout(device_handle, response_buffer, 32, 1000)
+                                bytes_read = hidapi.hidapi.hid_read_timeout(dev['handle'], response_buffer, 32, 1000)
                                 logging.debug(f"HID write: {bytes_written} bytes, read: {bytes_read} bytes")
-                            hidapi.hidapi.hid_close(device_handle)
-                            logging.debug("Used direct hidapi low-level access successfully")
-                    except Exception as e:
-                        logging.debug(f"Direct hidapi access failed: {e}")
-                
-                # Method 2: Try hid.open() function
-                if hasattr(hid, 'open') and not device_opened:
-                    try:
-                        dev = hid.open(vid, pid)
-                        if dev is not None:
+                    else:
+                        # Regular hidapi device
+                        dev.write(payload)
+                        # Try with timeout first, fallback to without timeout
+                        try:
+                            dev.read(32, timeout=1000)
+                        except TypeError:
+                            # Some versions don't support timeout parameter
+                            dev.read(32)
+                else:
+                    # Fallback to creating temporary device
+                    vid, pid, device_path = self.detect_bs2pro()
+                    if vid is None or pid is None:
+                        if status_callback:
+                            status_callback("❌ BS2PRO device not found", "danger")
+                        logging.error("BS2PRO device not found.")
+                        return False
+                    
+                    # Try different hidapi APIs based on version, starting with most compatible
+                    device_opened = False
+                    
+                    # Method 0: Try device() constructor with path (most reliable for BS2Pro)
+                    if hasattr(hid, 'device') and device_path and not device_opened:
+                        try:
+                            dev = hid.device()
+                            dev.open_path(device_path)
+                            device_opened = True
+                            payload = bytes.fromhex(hex_cmd)
+                            dev.write(payload)
+                            # Try without timeout since this hidapi version doesn't support it
+                            try:
+                                dev.read(32)
+                            except Exception:
+                                pass  # Read may not be necessary for command sending
+                            dev.close()
+                            logging.debug("Used device() + open_path() successfully")
+                        except Exception as e:
+                            logging.debug(f"device() + open_path() failed: {e}")
+                    
+                    # Method 1: Try direct hidapi low-level access
+                    if HIDAPI_DIRECT and not device_opened:
+                        try:
+                            device_handle = hidapi.hidapi.hid_open(vid, pid, hidapi.ffi.NULL)
+                            if device_handle != hidapi.ffi.NULL:
+                                device_opened = True
+                                payload = bytes.fromhex(hex_cmd)
+                                # Write the command
+                                bytes_written = hidapi.hidapi.hid_write(device_handle, payload, len(payload))
+                                if bytes_written > 0:
+                                    # Read response
+                                    response_buffer = hidapi.ffi.new("unsigned char[]", 32)
+                                    bytes_read = hidapi.hidapi.hid_read_timeout(device_handle, response_buffer, 32, 1000)
+                                    logging.debug(f"HID write: {bytes_written} bytes, read: {bytes_read} bytes")
+                                hidapi.hidapi.hid_close(device_handle)
+                                logging.debug("Used direct hidapi low-level access successfully")
+                        except Exception as e:
+                            logging.debug(f"Direct hidapi access failed: {e}")
+                    
+                    # Method 2: Try hid.open() function
+                    if hasattr(hid, 'open') and not device_opened:
+                        try:
+                            dev = hid.open(vid, pid)
+                            if dev is not None:
+                                device_opened = True
+                                payload = bytes.fromhex(hex_cmd)
+                                dev.write(payload)
+                                # Try with timeout first, fallback to without timeout
+                                try:
+                                    dev.read(32, timeout=1000)
+                                except TypeError:
+                                    # Some versions don't support timeout parameter
+                                    dev.read(32)
+                                dev.close()
+                        except Exception as e:
+                            logging.debug(f"hid.open() failed: {e}")
+                    
+                    # Method 3: Try device().open() (traditional approach)
+                    if hasattr(hid, 'device') and not device_opened:
+                        try:
+                            dev = hid.device()
+                            dev.open(vid, pid)
                             device_opened = True
                             payload = bytes.fromhex(hex_cmd)
                             dev.write(payload)
@@ -224,44 +245,36 @@ class BS2ProController:
                                 # Some versions don't support timeout parameter
                                 dev.read(32)
                             dev.close()
-                    except Exception as e:
-                        logging.debug(f"hid.open() failed: {e}")
+                        except Exception as e:
+                            logging.debug(f"hid.device().open() failed: {e}")
+                    
+                    # Skip Method 4 (Device class) as it's broken on this system
+                    
+                    if not device_opened:
+                        if attempt < 4:  # Don't log error on last attempt
+                            logging.debug(f"Failed to create shared HID device with any method, retrying in 200ms (attempt {attempt + 1}/5)")
+                            time.sleep(0.2)
+                            continue
+                        else:
+                            if status_callback:
+                                status_callback("❌ Failed to open HID device", "danger")
+                            logging.error("All HID device opening methods failed")
+                            return False
                 
-                # Method 3: Try device().open() (traditional approach)
-                if hasattr(hid, 'device') and not device_opened:
-                    try:
-                        dev = hid.device()
-                        dev.open(vid, pid)
-                        device_opened = True
-                        payload = bytes.fromhex(hex_cmd)
-                        dev.write(payload)
-                        # Try with timeout first, fallback to without timeout
-                        try:
-                            dev.read(32, timeout=1000)
-                        except TypeError:
-                            # Some versions don't support timeout parameter
-                            dev.read(32)
-                        dev.close()
-                    except Exception as e:
-                        logging.debug(f"hid.device().open() failed: {e}")
-                
-                # Skip Method 4 (Device class) as it's broken on this system
-                
-                if not device_opened:
+                if status_callback:
+                    status_callback("✅ Command sent successfully", "success")
+                logging.info(f"Command sent: {hex_cmd}")
+                return True
+            except Exception as e:
+                if attempt < 4:  # Don't log error on last attempt
+                    logging.debug(f"Shared device not available, retrying in 200ms (attempt {attempt + 1}/5)")
+                    time.sleep(0.2)
+                    continue
+                else:
                     if status_callback:
-                        status_callback("❌ Failed to open HID device", "danger")
-                    logging.error("All HID device opening methods failed")
+                        status_callback(f"⚠️ HID error: {e}", "danger")
+                    logging.error(f"HID error: {e}")
                     return False
-                
-            if status_callback:
-                status_callback("✅ Command sent successfully", "success")
-            logging.info(f"Command sent: {hex_cmd}")
-            return True
-        except Exception as e:
-            if status_callback:
-                status_callback(f"⚠️ HID error: {e}", "danger")
-            logging.error(f"HID error: {e}")
-            return False
     
     def _get_shared_device(self):
         """Get shared HID device for both reading and writing"""
