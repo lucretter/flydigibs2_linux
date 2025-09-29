@@ -213,6 +213,21 @@ def handle_cli_args(controller, config_manager):
             else:
                 success = controller.send_command(cmd)
             if success:
+                # Save config changes for commands that affect settings
+                if arg == "rpm_on":
+                    config_manager.save_setting("rpm_mode", "on")
+                elif arg == "rpm_off":
+                    config_manager.save_setting("rpm_mode", "off")
+                elif arg == "autostart_off":
+                    config_manager.save_setting("autostart", "off")
+                elif arg == "autostart_instant":
+                    config_manager.save_setting("autostart", "instant")
+                elif arg == "autostart_delayed":
+                    config_manager.save_setting("autostart", "delayed")
+                elif arg == "startwhenpowered_on":
+                    config_manager.save_setting("start_when_powered", "on")
+                elif arg == "startwhenpowered_off":
+                    config_manager.save_setting("start_when_powered", "off")
                 print(f"✅ Command '{arg}' sent.")
             else:
                 print(f"❌ Failed to send command '{arg}'.")

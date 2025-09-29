@@ -834,6 +834,9 @@ class BS2ProQtGUI(QMainWindow):
         self.smart_mode_manager = SmartModeManager()
         self.current_rpm = None
         self.displayed_rpm = None  # Track what's currently displayed
+        self.displayed_autostart = None  # Track autostart setting
+        self.displayed_rpm_mode = None  # Track RPM mode setting
+        self.displayed_start_powered = None  # Track start when powered setting
         
         # Initialize system tray
         self.tray_icon = None
@@ -937,7 +940,7 @@ class BS2ProQtGUI(QMainWindow):
         
         self.autostart_combo = QComboBox()
         self.autostart_combo.addItems(["OFF", "Instant", "Delayed"])
-        self.autostart_combo.setCurrentText(self.config_manager.load_setting("autostart_mode", "OFF"))
+        self.autostart_combo.setCurrentText(self.config_manager.load_setting("autostart", "off").title())
         self.autostart_combo.currentTextChanged.connect(self.on_autostart_select)
         self.autostart_combo.setToolTip("Choose autostart behavior")
         self.autostart_combo.setMinimumWidth(140)  # Increased from 120
@@ -945,19 +948,26 @@ class BS2ProQtGUI(QMainWindow):
         self.autostart_combo.setStyleSheet("padding-left: 8px; padding-right: 8px;")  # Add left/right padding
         settings_layout.addWidget(self.autostart_combo, 0, 1)
         
+        # Initialize tracking variables for config monitoring
+        self.displayed_autostart = self.config_manager.load_setting("autostart", "off")
+        
         # RPM Indicator checkbox
         self.rpm_indicator_cb = QCheckBox("RPM Indicator")
-        self.rpm_indicator_cb.setChecked(self.config_manager.load_setting("rpm_indicator", "False") == "True")
+        self.rpm_indicator_cb.setChecked(self.config_manager.load_setting("rpm_mode", "off") == "on")
         self.rpm_indicator_cb.toggled.connect(self.on_rpm_toggle)
         self.rpm_indicator_cb.setToolTip("Enable/disable RPM feedback from device")
         settings_layout.addWidget(self.rpm_indicator_cb, 1, 0, 1, 2)
         
         # Start When Powered checkbox
         self.start_powered_cb = QCheckBox("Start When Powered")
-        self.start_powered_cb.setChecked(self.config_manager.load_setting("start_when_powered", "False") == "True")
+        self.start_powered_cb.setChecked(self.config_manager.load_setting("start_when_powered", "off") == "on")
         self.start_powered_cb.toggled.connect(self.on_start_toggle)
         self.start_powered_cb.setToolTip("Automatically start when device is powered on")
         settings_layout.addWidget(self.start_powered_cb, 2, 0, 1, 2)
+        
+        # Initialize remaining tracking variables
+        self.displayed_rpm_mode = self.config_manager.load_setting("rpm_mode", "off")
+        self.displayed_start_powered = self.config_manager.load_setting("start_when_powered", "off")
         
         parent_layout.addWidget(settings_group)
         
@@ -1123,6 +1133,7 @@ class BS2ProQtGUI(QMainWindow):
     def check_config_changes(self):
         """Check for external config changes (e.g., from CLI commands)"""
         try:
+            # Check RPM changes
             current_last_rpm = int(self.config_manager.load_setting("last_rpm", 1900))
             if self.displayed_rpm != current_last_rpm:
                 logging.warning(f"Detected RPM change from config: {self.displayed_rpm} -> {current_last_rpm}")
@@ -1132,6 +1143,37 @@ class BS2ProQtGUI(QMainWindow):
                 self.rpm_combo.setCurrentText(str(current_last_rpm))
                 self.rpm_combo.blockSignals(False)
                 self.rpm_display_label.setText(f"Current: {current_last_rpm} RPM")
+            
+            # Check autostart changes
+            current_autostart = self.config_manager.load_setting("autostart", "off")
+            if self.displayed_autostart != current_autostart:
+                logging.warning(f"Detected autostart change from config: {self.displayed_autostart} -> {current_autostart}")
+                self.displayed_autostart = current_autostart
+                # Update the combo box
+                self.autostart_combo.blockSignals(True)
+                self.autostart_combo.setCurrentText(current_autostart.title())
+                self.autostart_combo.blockSignals(False)
+            
+            # Check RPM mode changes
+            current_rpm_mode = self.config_manager.load_setting("rpm_mode", "off")
+            if self.displayed_rpm_mode != current_rpm_mode:
+                logging.warning(f"Detected RPM mode change from config: {self.displayed_rpm_mode} -> {current_rpm_mode}")
+                self.displayed_rpm_mode = current_rpm_mode
+                # Update the checkbox
+                self.rpm_indicator_cb.blockSignals(True)
+                self.rpm_indicator_cb.setChecked(current_rpm_mode == "on")
+                self.rpm_indicator_cb.blockSignals(False)
+            
+            # Check start when powered changes
+            current_start_powered = self.config_manager.load_setting("start_when_powered", "off")
+            if self.displayed_start_powered != current_start_powered:
+                logging.warning(f"Detected start_when_powered change from config: {self.displayed_start_powered} -> {current_start_powered}")
+                self.displayed_start_powered = current_start_powered
+                # Update the checkbox
+                self.start_powered_cb.blockSignals(True)
+                self.start_powered_cb.setChecked(current_start_powered == "on")
+                self.start_powered_cb.blockSignals(False)
+                
         except Exception as e:
             logging.debug(f"Error checking config changes: {e}")
         
@@ -1213,7 +1255,7 @@ class BS2ProQtGUI(QMainWindow):
         """Handle autostart mode selection"""
         cmd = self.commands[f"autostart_{selected_value.lower()}"]
         success = self.controller.send_command(cmd, status_callback=self.create_status_callback())
-        self.config_manager.save_setting("autostart_mode", selected_value)
+        self.config_manager.save_setting("autostart", selected_value.lower())
         if not success:
             self.update_status("Failed to set autostart mode", "#dc3545")
             
@@ -1221,7 +1263,7 @@ class BS2ProQtGUI(QMainWindow):
         """Handle RPM indicator toggle"""
         cmd = self.commands["rpm_on"] if checked else self.commands["rpm_off"]
         success = self.controller.send_command(cmd, status_callback=self.create_status_callback())
-        self.config_manager.save_setting("rpm_indicator", str(checked))
+        self.config_manager.save_setting("rpm_mode", "on" if checked else "off")
         if not success:
             self.update_status("Failed to toggle RPM indicator", "#dc3545")
             
@@ -1235,7 +1277,7 @@ class BS2ProQtGUI(QMainWindow):
             for cmd in self.commands["startwhenpowered_off"]:
                 if not self.controller.send_command(cmd, status_callback=status_callback):
                     success = False
-        self.config_manager.save_setting("start_when_powered", str(checked))
+        self.config_manager.save_setting("start_when_powered", "on" if checked else "off")
         if not success:
             self.update_status("Failed to toggle start when powered", "#dc3545")
             
