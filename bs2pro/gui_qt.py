@@ -833,6 +833,7 @@ class BS2ProQtGUI(QMainWindow):
         self.cpu_monitor.set_source(temperature_source)
         self.smart_mode_manager = SmartModeManager()
         self.current_rpm = None
+        self.displayed_rpm = None  # Track what's currently displayed
         
         # Initialize system tray
         self.tray_icon = None
@@ -980,6 +981,7 @@ class BS2ProQtGUI(QMainWindow):
         self.rpm_combo.setMinimumWidth(100)
         self.rpm_combo.setMinimumHeight(24)  # Ensure proper height
         last_rpm = int(self.config_manager.load_setting("last_rpm", 1900))
+        self.displayed_rpm = last_rpm  # Track what's currently displayed
         self.rpm_combo.setCurrentText(str(last_rpm))
         self.rpm_combo.currentTextChanged.connect(self.on_rpm_select)
         self.rpm_combo.setToolTip("Choose fan RPM setting")
@@ -1112,6 +1114,26 @@ class BS2ProQtGUI(QMainWindow):
         # Setup RPM monitoring callbacks
         self.controller.add_rpm_callback(self.on_rpm_update)
         self.controller.start_rpm_monitoring()
+        
+        # Setup config monitoring timer to detect external RPM changes
+        self.config_timer = QTimer()
+        self.config_timer.timeout.connect(self.check_config_changes)
+        self.config_timer.start(1000)  # Check every second
+        
+    def check_config_changes(self):
+        """Check for external config changes (e.g., from CLI commands)"""
+        try:
+            current_last_rpm = int(self.config_manager.load_setting("last_rpm", 1900))
+            if self.displayed_rpm != current_last_rpm:
+                logging.warning(f"Detected RPM change from config: {self.displayed_rpm} -> {current_last_rpm}")
+                self.displayed_rpm = current_last_rpm
+                # Update the combo box and display
+                self.rpm_combo.blockSignals(True)  # Prevent triggering on_rpm_select
+                self.rpm_combo.setCurrentText(str(current_last_rpm))
+                self.rpm_combo.blockSignals(False)
+                self.rpm_display_label.setText(f"Current: {current_last_rpm} RPM")
+        except Exception as e:
+            logging.debug(f"Error checking config changes: {e}")
         
     def setup_system_tray(self):
         """Setup system tray icon"""

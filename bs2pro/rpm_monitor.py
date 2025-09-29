@@ -210,6 +210,24 @@ class RPMMonitor:
             hex_data = data.hex()
             logging.info(f"Received data: {hex_data}")
             
+            # Check if this is an echoed RPM command (starts with 5aa52605)
+            # Pattern: 5aa52605[4 bytes RPM data]...
+            if len(data) >= 8 and data[0] == 0x5a and data[1] == 0xa5 and data[2] == 0x26 and data[3] == 0x05:
+                logging.info("Detected echoed RPM command")
+                
+                # Extract RPM value from bytes 5-6 (little-endian 16-bit)
+                if len(data) >= 7:
+                    rpm_bytes = data[5:7]
+                    rpm_value = struct.unpack('<H', rpm_bytes)[0]
+                    
+                    # Validate RPM range
+                    if 1000 <= rpm_value <= 3000:
+                        logging.info(f"Extracted RPM from echoed command: {rpm_value}")
+                        return rpm_value
+                
+                logging.info("Could not extract valid RPM from echoed command")
+                return None
+            
             # Check if this is a BS2Pro status response
             # Pattern: 035aa5ef0b[changing_data]...
             if len(data) >= 10 and data[0] == 0x03 and data[1] == 0x5a and data[2] == 0xa5:
