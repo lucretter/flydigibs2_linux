@@ -1130,6 +1130,11 @@ class BS2ProQtGUI(QMainWindow):
         self.config_timer.timeout.connect(self.check_config_changes)
         self.config_timer.start(1000)  # Check every second
         
+        # Setup device status monitoring timer
+        self.device_status_timer = QTimer()
+        self.device_status_timer.timeout.connect(self.update_device_status)
+        self.device_status_timer.start(1000)  # Check every second
+        
     def check_config_changes(self):
         """Check for external config changes (e.g., from CLI commands)"""
         try:
@@ -1515,6 +1520,10 @@ class BS2ProQtGUI(QMainWindow):
             self.cpu_monitor.stop_monitoring()
         if self.controller:
             self.controller.stop_rpm_monitoring()
+        if hasattr(self, 'config_timer') and self.config_timer:
+            self.config_timer.stop()
+        if hasattr(self, 'device_status_timer') and self.device_status_timer:
+            self.device_status_timer.stop()
         if self.tray_icon:
             self.tray_icon.hide()
 
