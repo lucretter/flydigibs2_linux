@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="bs2pro-controller",
-        version="2.5.3",  # Fixed numpy dependency bundling issue
+        version="2.9.0",  # Added continuous device status monitoring
     packages=find_packages(),
     include_package_data=True,
     install_requires=[

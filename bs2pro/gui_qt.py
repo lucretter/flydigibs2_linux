@@ -1102,7 +1102,7 @@ class BS2ProQtGUI(QMainWindow):
         # Add small spacer before footer
         parent_layout.addSpacing(8)
         
-        footer_label = QLabel("BS2PRO Controller v2.3.0 • Made with ❤️")
+        footer_label = QLabel("BS2PRO Controller v2.9.0 • Made with ❤️")
         footer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer_label.setStyleSheet("color: gray; font-size: 10px; padding: 4px;")
         parent_layout.addWidget(footer_label)
@@ -2236,7 +2236,7 @@ def create_qt_application(controller, config_manager, rpm_commands, commands, de
         
     # Set application properties
     app.setApplicationName("BS2PRO Controller")
-    app.setApplicationVersion("2.4.0")
+    app.setApplicationVersion("2.9.0")
     app.setOrganizationName("BS2PRO")
     
     # Debug: store current style information, log concisely
