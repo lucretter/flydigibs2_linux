@@ -43,22 +43,6 @@ fi
 echo "Installing required Python packages in venv..."
 pip install hidapi PyQt6 pyqtgraph  # Dependencies for PyQt6 GUI support
 
-# Install system dependencies for temperature monitoring
-echo "Installing system dependencies for temperature monitoring..."
-if command -v apt-get &> /dev/null; then
-    # Debian/Ubuntu
-    sudo apt-get update
-    sudo apt-get install -y lm-sensors
-elif command -v dnf &> /dev/null; then
-    # Fedora/RHEL
-    sudo dnf install -y lm_sensors
-elif command -v pacman &> /dev/null; then
-    # Arch Linux
-    sudo pacman -S --noconfirm lm_sensors
-else
-    echo "Warning: Could not detect package manager. Please install lm-sensors manually for individual CPU core temperature monitoring."
-fi
-
 # Build executable
 pyinstaller --onefile --name "$APP_NAME" "$MAIN_SCRIPT" \
     --hidden-import=PIL._tkinter_finder \
