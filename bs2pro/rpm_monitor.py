@@ -71,34 +71,89 @@ class RPMMonitor:
             logging.error("HID library not available")
             return False
         
+        # Known Flydigi vendor IDs (can be extended if needed)
+        FLYDIGI_VENDOR_IDS = [
+            0x37d7,  # Flydigi vendor ID
+        ]
+        
         try:
             devices = hid.enumerate()
             for d in devices:
                 # Handle both dictionary-style and attribute-style access for different hidapi versions
                 product_string = ""
+                manufacturer_string = ""
                 vendor_id = None
                 product_id = None
                 
                 # Check if it's a dictionary (most common case)
                 if isinstance(d, dict):
                     product_string = d.get("product_string", "")
+                    manufacturer_string = d.get("manufacturer_string", "")
                     vendor_id = d.get("vendor_id")
                     product_id = d.get("product_id")
                 else:
                     # Try attribute access for object-style access
                     try:
                         product_string = getattr(d, 'product_string', '')
+                        manufacturer_string = getattr(d, 'manufacturer_string', '')
                         vendor_id = getattr(d, 'vendor_id', None)
                         product_id = getattr(d, 'product_id', None)
                     except (AttributeError, TypeError):
                         # Skip this device if we can't access its info
                         continue
                 
-                if product_string and "BS2PRO" in product_string:
+                # Normalize strings for comparison (case-insensitive)
+                product_upper = product_string.upper() if product_string else ""
+                manufacturer_upper = manufacturer_string.upper() if manufacturer_string else ""
+                
+                # Detection heuristics (in order of preference):
+                # 1. Product string contains "BS2" (catches BS2, BS2PRO, BS2 Pro, etc.)
+                # 2. Manufacturer is "Flydigi" AND product contains "BS2"
+                # 3. Manufacturer is "Flydigi" (fallback for any Flydigi device)
+                # 4. Vendor ID matches known Flydigi vendor IDs AND product contains "BS2"
+                
+                is_bs2_product = "BS2" in product_upper if product_upper else False
+                is_flydigi_manufacturer = "FLYDIGI" in manufacturer_upper if manufacturer_upper else False
+                is_flydigi_vendor = vendor_id in FLYDIGI_VENDOR_IDS if vendor_id is not None else False
+                
+                # Primary detection: Product name contains "BS2"
+                if is_bs2_product:
                     self.vid = vendor_id
                     self.pid = product_id
-                    logging.info(f"BS2Pro found: VID={self.vid:04x}, PID={self.pid:04x}")
+                    logging.info(f"BS2Pro found (by product name): VID={self.vid:04x}, PID={self.pid:04x}")
                     return True
+                
+                # Secondary detection: Flydigi manufacturer + BS2 product
+                if is_flydigi_manufacturer and is_bs2_product:
+                    self.vid = vendor_id
+                    self.pid = product_id
+                    logging.info(f"BS2Pro found (by manufacturer + product): VID={self.vid:04x}, PID={self.pid:04x}")
+                    return True
+                
+                # Tertiary detection: Flydigi vendor ID + BS2 product (when manufacturer string unavailable)
+                if is_flydigi_vendor and is_bs2_product:
+                    self.vid = vendor_id
+                    self.pid = product_id
+                    logging.info(f"BS2Pro found (by vendor ID + product): VID={self.vid:04x}, PID={self.pid:04x}")
+                    return True
+                
+                # Last resort: Flydigi manufacturer only (very permissive, logs warning)
+                if is_flydigi_manufacturer:
+                    self.vid = vendor_id
+                    self.pid = product_id
+                    logging.warning(f"BS2Pro found (by manufacturer only - may be incorrect): "
+                                  f"VID={self.vid:04x}, PID={self.pid:04x}")
+                    return True
+                
+                # Final fallback: Flydigi vendor ID only (when strings are empty/unavailable)
+                # This handles cases where HID device doesn't expose product/manufacturer strings
+                if is_flydigi_vendor and vendor_id is not None and product_id is not None:
+                    self.vid = vendor_id
+                    self.pid = product_id
+                    logging.info(f"BS2Pro found (by vendor ID only - strings unavailable): "
+                               f"VID={self.vid:04x}, PID={self.pid:04x}")
+                    return True
+            
             return False
         except Exception as e:
             logging.error(f"Error enumerating HID devices: {e}")
