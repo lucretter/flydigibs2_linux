@@ -64,6 +64,9 @@ class BS2ProController:
         
         try:
             devices = hid.enumerate()
+            # Convert generator to list if needed (some hidapi versions return generators)
+            if not isinstance(devices, list):
+                devices = list(devices)
             logging.debug(f"Enumerating {len(devices)} HID devices...")
             for d in devices:
                 # Handle both dictionary-style and attribute-style access for different hidapi versions
